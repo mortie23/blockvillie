@@ -41,6 +41,18 @@ function App() {
   const [worldItems, setWorldItems] = useState(INITIAL_ITEMS);
   const [activeCharacter, setActiveCharacter] = useState(CHARACTERS[0]);
   
+  // Window size tracking for camera clamp
+  const [windowSize, setWindowSize] = useState({ 
+    w: typeof window !== 'undefined' ? window.innerWidth : 800, 
+    h: typeof window !== 'undefined' ? window.innerHeight : 600 
+  });
+
+  useEffect(() => {
+    const handleResize = () => setWindowSize({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   // Modals & UI
   const [activeModal, setActiveModal] = useState(null); // 'clothing', 'closet', 'shop', 'map'
   const [pendingItem, setPendingItem] = useState(null); // Item player just stood on
@@ -133,6 +145,19 @@ function App() {
     setActiveModal(null);
   };
 
+  // Camera bounds calculation (so you don't see out-of-bounds map)
+  const mapWidthPx = mapData.width * TILE_SIZE;
+  const mapHeightPx = mapData.height * TILE_SIZE;
+  const halfW = windowSize.w / 2;
+  const halfH = windowSize.h / 2;
+
+  const idealX = playerPos.x * TILE_SIZE + TILE_SIZE / 2;
+  const idealY = playerPos.y * TILE_SIZE + TILE_SIZE / 2;
+
+  // Clamp if map is larger than screen. If smaller, center it.
+  const clampedX = mapWidthPx > windowSize.w ? Math.max(halfW, Math.min(idealX, mapWidthPx - halfW)) : mapWidthPx / 2;
+  const clampedY = mapHeightPx > windowSize.h ? Math.max(halfH, Math.min(idealY, mapHeightPx - halfH)) : mapHeightPx / 2;
+
   return (
     <div className="game-container">
       {/* Background UI Layer */}
@@ -169,7 +194,7 @@ function App() {
         position: 'absolute', 
         top: '50%', 
         left: '50%', 
-        transform: `translate(${-playerPos.x * TILE_SIZE - TILE_SIZE/2}px, ${-playerPos.y * TILE_SIZE - TILE_SIZE/2}px)`,
+        transform: `translate(${-clampedX}px, ${-clampedY}px)`,
         transition: 'transform 0.15s linear'
       }}>
         <div className="map-grid" style={{ 

@@ -259,8 +259,9 @@ body {
 .d-pad-container {
   display: none; /* Hidden by default on large screens */
   position: absolute;
-  bottom: 30px;
-  right: 30px;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 160px;
   height: 160px;
   z-index: 150;
