@@ -70,7 +70,7 @@ body {
 
 .game-container {
   width: 100vw;
-  height: 100vh;
+  height: 100dvh; /* dynamic viewport height accounts for mobile browser UI */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -173,7 +173,7 @@ body {
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px);
   display: flex;
@@ -259,7 +259,7 @@ body {
 .d-pad-container {
   display: none; /* Hidden by default on large screens */
   position: absolute;
-  bottom: 50px;
+  bottom: 130px; /* Moved up by the size of one grid tile (80px) */
   left: 50%;
   transform: translateX(-50%);
   width: 160px;
