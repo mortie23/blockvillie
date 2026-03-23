@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Shirt, Diamond, Sparkle, X, Map as MapIcon, ShoppingBag, Users } from 'lucide-react';
+import { Shirt, Diamond, Sparkle, X, Map as MapIcon, ShoppingBag, Users, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import { MAPS } from './components/MapData';
 import { CHARACTERS } from './components/Characters';
 
@@ -370,6 +370,14 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Mobile D-Pad Overlay */}
+      <div className="d-pad-container pointer-events-auto">
+        <button className="d-pad-btn up" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({key: 'ArrowUp'}); }}><ArrowUp size={32} /></button>
+        <button className="d-pad-btn left" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({key: 'ArrowLeft'}); }}><ArrowLeft size={32} /></button>
+        <button className="d-pad-btn right" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({key: 'ArrowRight'}); }}><ArrowRight size={32} /></button>
+        <button className="d-pad-btn down" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({key: 'ArrowDown'}); }}><ArrowDown size={32} /></button>
+      </div>
     </div>
   );
 }
