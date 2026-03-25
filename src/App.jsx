@@ -1,19 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Shirt, Diamond, Sparkle, X, Map as MapIcon, ShoppingBag, Users, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Diamond, X, Map as MapIcon, ShoppingBag, Users, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import { MAPS } from './components/MapData';
 import { CHARACTERS } from './components/Characters';
+import { OUTFITS } from './assets/img/outfit/data.js';
 
 const TILE_SIZE = 80;
 
-// Initial spawned items (clothes and diamonds)
+// Build one world-drop item per spawn entry across all outfits.
+const _outfitWorldDrops = Object.values(OUTFITS).flatMap(o =>
+  (o.spawns || []).map((spawn, idx) => ({
+    id: `outfit-${o.id}-${spawn.map}-${idx}`,
+    type: 'clothing',
+    outfit: o,
+    spawnMap: spawn.map,
+    x: spawn.x,
+    y: spawn.y,
+  }))
+);
+
 const INITIAL_ITEMS = {
   playground: [
-    { id: 'c1', type: 'clothing', x: 2, y: 3, name: 'Cool Hoodie', color: '#ff6b6b' },
     { id: 'd1', type: 'diamond', x: 8, y: 5 },
     { id: 'd2', type: 'diamond', x: 13, y: 12 },
   ],
   school: [
-    { id: 'c2', type: 'clothing', x: 5, y: 5, name: 'School Uniform', color: '#4ecdc4' },
+    ..._outfitWorldDrops.filter(o => o.spawnMap === 'school'),
     { id: 'd3', type: 'diamond', x: 10, y: 3 },
     { id: 'd4', type: 'diamond', x: 11, y: 8 },
   ],
@@ -21,30 +32,36 @@ const INITIAL_ITEMS = {
     { id: 'd5', type: 'diamond', x: 3, y: 8 },
     { id: 'd6', type: 'diamond', x: 12, y: 5 },
     { id: 'd7', type: 'diamond', x: 4, y: 13 },
-  ]
+  ],
+  suburban_house: [
+    ..._outfitWorldDrops.filter(o => o.spawnMap === 'suburban_house'),
+    { id: 'dsh1', type: 'diamond', x: 4,  y: 10 }, // left bedroom
+    { id: 'dsh2', type: 'diamond', x: 21, y: 12 }, // main hall
+    { id: 'dsh3', type: 'diamond', x: 28, y: 14 }, // right bedroom
+    { id: 'dsh4', type: 'diamond', x: 25, y: 17 }, // hallway
+  ],
 };
 
-const SHOP_ITEMS = [
-  { id: 's1', type: 'clothing', name: 'Princess Dress', color: '#f72585', price: 2 },
-  { id: 's2', type: 'clothing', name: 'Ninja Suit', color: '#3a0ca3', price: 3 },
-  { id: 's3', type: 'clothing', name: 'Space Helmet', color: '#4361ee', price: 5 },
-];
+// Shop items: outfits with price > 0 and no spawns.
+const SHOP_ITEMS = Object.values(OUTFITS)
+  .filter(o => o.price > 0 && (!o.spawns || o.spawns.length === 0))
+  .map(o => ({ id: `shop-${o.id}`, type: 'clothing', outfit: o, price: o.price }));
 
 function App() {
   const [currentMapId, setCurrentMapId] = useState('playground');
   const [playerPos, setPlayerPos] = useState({ x: MAPS['playground'].startX, y: MAPS['playground'].startY });
-  
+
   // Game State
   const [diamonds, setDiamonds] = useState(0);
   const [inventory, setInventory] = useState([]); // Array of clothing objects
   const [equipped, setEquipped] = useState(null); // ID of equipped clothing
   const [worldItems, setWorldItems] = useState(INITIAL_ITEMS);
   const [activeCharacter, setActiveCharacter] = useState(CHARACTERS[0]);
-  
+
   // Window size tracking for camera clamp
-  const [windowSize, setWindowSize] = useState({ 
-    w: typeof window !== 'undefined' ? window.innerWidth : 800, 
-    h: typeof window !== 'undefined' ? window.innerHeight : 600 
+  const [windowSize, setWindowSize] = useState({
+    w: typeof window !== 'undefined' ? window.innerWidth : 800,
+    h: typeof window !== 'undefined' ? window.innerHeight : 600
   });
 
   useEffect(() => {
@@ -52,7 +69,7 @@ function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
+
   // Modals & UI
   const [activeModal, setActiveModal] = useState(null); // 'clothing', 'closet', 'shop', 'map'
   const [pendingItem, setPendingItem] = useState(null); // Item player just stood on
@@ -75,14 +92,14 @@ function App() {
 
     // Collision check (1=wall)
     const tileType = mapData.data[y][x];
-    if (tileType !== 0 && tileType !== 3) return;
+    if (tileType !== 0 && tileType !== 3 && tileType !== 4) return;
 
     // Static Object Collision
     const isStaticObject = (mapData.objects || []).some(obj => {
       const objW = obj.type.width || 1;
       const objH = obj.type.height || 1;
       return x >= obj.x && x < obj.x + objW &&
-             y >= obj.y && y < obj.y + objH;
+        y >= obj.y && y < obj.y + objH;
     });
     if (isStaticObject) return;
 
@@ -167,38 +184,38 @@ function App() {
             <Diamond className="diamond-icon" fill="#ffb703" color="#ffb703" size={24} />
             {diamonds}
           </div>
-          
+
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="button secondary" onClick={() => setActiveModal('map')}>
-              <MapIcon size={20} style={{marginRight: 8, verticalAlign: 'middle'}}/> Map
+              <MapIcon size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Map
             </button>
-            <button className="button" style={{background: '#4ecdc4', color: '#fff'}} onClick={() => setActiveModal('characters')}>
-              <Users size={20} style={{marginRight: 8, verticalAlign: 'middle'}}/> Characters
+            <button className="button" style={{ background: '#4ecdc4', color: '#fff' }} onClick={() => setActiveModal('characters')}>
+              <Users size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Characters
             </button>
             <button className="button" onClick={() => setActiveModal('closet')}>
-              <Shirt size={20} style={{marginRight: 8, verticalAlign: 'middle'}}/> Closet
+              👗 Closet
             </button>
-            <button className="button" style={{background: '#9d4edd'}} onClick={() => setActiveModal('shop')}>
-              <ShoppingBag size={20} style={{marginRight: 8, verticalAlign: 'middle'}}/> Shop
+            <button className="button" style={{ background: '#9d4edd' }} onClick={() => setActiveModal('shop')}>
+              <ShoppingBag size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Shop
             </button>
           </div>
         </div>
-        
+
         <div className="map-title" style={{ alignSelf: 'center', fontSize: '2rem', fontWeight: 800, color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.3)', pointerEvents: 'none', marginBottom: '20px' }}>
           {mapData.name}
         </div>
       </div>
 
       {/* Game Map Rendering */}
-      <div className="game-world" style={{ 
-        position: 'absolute', 
-        top: '50%', 
-        left: '50%', 
+      <div className="game-world" style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
         transform: `translate(${-clampedX}px, ${-clampedY}px)`,
         transition: 'transform 0.15s linear'
       }}>
-        <div className="map-grid" style={{ 
-          width: mapData.width * TILE_SIZE, 
+        <div className="map-grid" style={{
+          width: mapData.width * TILE_SIZE,
           height: mapData.height * TILE_SIZE,
           gridTemplateColumns: `repeat(${mapData.width}, ${TILE_SIZE}px)`,
           position: 'absolute',
@@ -211,20 +228,20 @@ function App() {
 
         {/* Static Image Map Objects */}
         {(mapData.objects || []).map((obj, i) => (
-          <img 
-            key={`obj-${i}`} 
-            src={obj.type.src} 
-            alt={obj.type.id} 
-            style={{ 
-              position: 'absolute', 
-              left: obj.x * TILE_SIZE, 
-              top: obj.y * TILE_SIZE, 
-              width: obj.type.width * TILE_SIZE, 
+          <img
+            key={`obj-${i}`}
+            src={obj.type.src}
+            alt={obj.type.id}
+            style={{
+              position: 'absolute',
+              left: obj.x * TILE_SIZE,
+              top: obj.y * TILE_SIZE,
+              width: obj.type.width * TILE_SIZE,
               height: obj.type.height * TILE_SIZE,
               objectFit: 'contain',
               zIndex: 2,
               filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))'
-            }} 
+            }}
           />
         ))}
 
@@ -234,7 +251,11 @@ function App() {
             {item.type === 'diamond' ? (
               <Diamond fill="#ffb703" color="#fb8500" size={48} className="diamond-icon" />
             ) : (
-              <Shirt fill={item.color} color="#fff" size={56} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+              <img
+                src={item.outfit.src}
+                alt={item.outfit.name}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+              />
             )}
           </div>
         ))}
@@ -242,25 +263,34 @@ function App() {
         {/* Player Sprite */}
         <div className="player player-sprite" style={{ left: playerPos.x * TILE_SIZE, top: playerPos.y * TILE_SIZE }}>
           <div style={{
-            width: TILE_SIZE, 
-            height: TILE_SIZE, 
+            width: TILE_SIZE,
+            height: TILE_SIZE,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             position: 'relative'
           }}>
             <img src={activeCharacter.src} alt={activeCharacter.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            
-            {/* Currently Equipped Clothes indication */}
-            {equipped && (
-              <div style={{
-                position: 'absolute', 
-                bottom: -16, 
-                color: inventory.find(i => i.id === equipped)?.color || '#fff'
-              }}>
-                <Shirt size={44} fill="currentColor" color="rgba(0,0,0,0.2)"/>
-              </div>
-            )}
+
+            {/* Currently Equipped Clothes — overlaid at full character size */}
+            {equipped && (() => {
+              const equippedItem = inventory.find(i => i.id === equipped);
+              return equippedItem ? (
+                <img
+                  src={equippedItem.outfit.src}
+                  alt={equippedItem.outfit.name}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    pointerEvents: 'none',
+                  }}
+                />
+              ) : null;
+            })()}
           </div>
         </div>
       </div>
@@ -270,11 +300,15 @@ function App() {
         <div className="modal-overlay">
           <div className="glass-panel modal-content">
             <h2>You found clothing!</h2>
-            <div style={{display: 'flex', justifyContent: 'center', padding: '20px'}}>
-              <Shirt size={80} fill={pendingItem.color} color="#fff" style={{ filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))', animation: 'float 2s infinite ease-in-out' }} />
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+              <img
+                src={pendingItem.outfit.src}
+                alt={pendingItem.outfit.name}
+                style={{ width: 120, height: 120, objectFit: 'contain', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))', animation: 'float 2s infinite ease-in-out' }}
+              />
             </div>
-            <h3>{pendingItem.name}</h3>
-            <div style={{display: 'flex', gap: '10px', justifyContent: 'center'}}>
+            <h3>{pendingItem.outfit.name}</h3>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               <button className="button" onClick={() => acceptClothing(true)}>Accept & Wear</button>
               <button className="button secondary" onClick={() => acceptClothing(false)}>Put in Closet</button>
             </div>
@@ -284,23 +318,23 @@ function App() {
 
       {activeModal === 'closet' && (
         <div className="modal-overlay">
-          <div className="glass-panel modal-content" style={{maxWidth: '600px'}}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <div className="glass-panel modal-content" style={{ maxWidth: '600px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2>Your Closet</h2>
-              <button className="button secondary" style={{padding: '5px 10px'}} onClick={() => setActiveModal(null)}><X size={20}/></button>
+              <button className="button secondary" style={{ padding: '5px 10px' }} onClick={() => setActiveModal(null)}><X size={20} /></button>
             </div>
             {inventory.length === 0 ? (
-              <p style={{padding: '40px', color: '#666'}}>Your closet is empty. Explore to find clothes!</p>
+              <p style={{ padding: '40px', color: '#666' }}>Your closet is empty. Explore to find clothes!</p>
             ) : (
               <div className="closet-grid">
                 {inventory.map(item => (
-                  <div 
-                    key={item.id} 
+                  <div
+                    key={item.id}
                     className={`closet-item ${equipped === item.id ? 'equipped' : ''}`}
                     onClick={() => setEquipped(item.id)}
                   >
-                    <Shirt fill={item.color} color="#000" size={40} style={{margin: '0 auto', display: 'block'}} />
-                    <div style={{fontSize: '0.9rem', marginTop: '10px'}}>{item.name}</div>
+                    <img src={item.outfit.src} alt={item.outfit.name} style={{ width: 56, height: 56, objectFit: 'contain', margin: '0 auto', display: 'block' }} />
+                    <div style={{ fontSize: '0.9rem', marginTop: '10px' }}>{item.outfit.name}</div>
                   </div>
                 ))}
               </div>
@@ -312,15 +346,15 @@ function App() {
       {activeModal === 'map' && (
         <div className="modal-overlay">
           <div className="glass-panel modal-content">
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2>Fast Travel</h2>
-              <button className="button secondary" style={{padding: '5px 10px'}} onClick={() => setActiveModal(null)}><X size={20}/></button>
+              <button className="button secondary" style={{ padding: '5px 10px' }} onClick={() => setActiveModal(null)}><X size={20} /></button>
             </div>
-            <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {Object.values(MAPS).map(m => (
-                <button 
-                  key={m.id} 
-                  className={`button ${currentMapId === m.id ? 'secondary' : ''}`} 
+                <button
+                  key={m.id}
+                  className={`button ${currentMapId === m.id ? 'secondary' : ''}`}
                   onClick={() => changeMap(m.id)}
                   disabled={currentMapId === m.id}
                 >
@@ -334,12 +368,12 @@ function App() {
 
       {activeModal === 'shop' && (
         <div className="modal-overlay">
-          <div className="glass-panel modal-content" style={{maxWidth: '600px'}}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-              <h2 style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+          <div className="glass-panel modal-content" style={{ maxWidth: '600px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <ShoppingBag color="#9d4edd" /> Village Shop
               </h2>
-              <button className="button secondary" style={{padding: '5px 10px'}} onClick={() => setActiveModal(null)}><X size={20}/></button>
+              <button className="button secondary" style={{ padding: '5px 10px' }} onClick={() => setActiveModal(null)}><X size={20} /></button>
             </div>
             <p>Buy exclusive outfits with your collected diamonds!</p>
             <div className="closet-grid">
@@ -347,20 +381,20 @@ function App() {
                 const owned = inventory.some(i => i.id === item.id);
                 const canAfford = diamonds >= item.price;
                 return (
-                  <div key={item.id} className="closet-item" style={{opacity: owned ? 0.5 : 1}}>
-                    <Shirt fill={item.color} color="#000" size={40} style={{margin: '0 auto', display: 'block'}} />
-                    <div style={{fontSize: '0.9rem', marginTop: '10px'}}>{item.name}</div>
-                    <div style={{marginTop: '10px'}}>
+                  <div key={item.id} className="closet-item" style={{ opacity: owned ? 0.5 : 1 }}>
+                    <img src={item.outfit.src} alt={item.outfit.name} style={{ width: 56, height: 56, objectFit: 'contain', margin: '0 auto', display: 'block' }} />
+                    <div style={{ fontSize: '0.9rem', marginTop: '10px' }}>{item.outfit.name}</div>
+                    <div style={{ marginTop: '10px' }}>
                       {owned ? (
-                        <span style={{color: '#4ecdc4', fontWeight: 'bold'}}>Owned</span>
+                        <span style={{ color: '#4ecdc4', fontWeight: 'bold' }}>Owned</span>
                       ) : (
-                        <button 
-                          className="button" 
-                          style={{padding: '5px 10px', width: '100%', background: canAfford ? '#ffb703' : '#ccc'}}
+                        <button
+                          className="button"
+                          style={{ padding: '5px 10px', width: '100%', background: canAfford ? '#ffb703' : '#ccc' }}
                           onClick={() => buyItem(item)}
                           disabled={!canAfford}
                         >
-                          <Diamond size={14} style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '4px'}}/>
+                          <Diamond size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                           {item.price}
                         </button>
                       )}
@@ -375,20 +409,20 @@ function App() {
 
       {activeModal === 'characters' && (
         <div className="modal-overlay">
-          <div className="glass-panel modal-content" style={{maxWidth: '800px'}}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <div className="glass-panel modal-content" style={{ maxWidth: '800px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2>Select Character</h2>
-              <button className="button secondary" style={{padding: '5px 10px'}} onClick={() => setActiveModal(null)}><X size={20}/></button>
+              <button className="button secondary" style={{ padding: '5px 10px' }} onClick={() => setActiveModal(null)}><X size={20} /></button>
             </div>
-            <div className="closet-grid" style={{gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))'}}>
+            <div className="closet-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))' }}>
               {CHARACTERS.map(char => (
-                <div 
-                  key={char.id} 
+                <div
+                  key={char.id}
                   className={`closet-item ${activeCharacter.id === char.id ? 'equipped' : ''}`}
                   onClick={() => { setActiveCharacter(char); setActiveModal(null); }}
                 >
                   <img src={char.src} alt={char.name} style={{ width: '60px', height: '60px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
-                  <div style={{fontSize: '0.9rem', marginTop: '10px', textAlign: 'center', fontWeight: 'bold'}}>{char.name}</div>
+                  <div style={{ fontSize: '0.9rem', marginTop: '10px', textAlign: 'center', fontWeight: 'bold' }}>{char.name}</div>
                 </div>
               ))}
             </div>
@@ -398,10 +432,10 @@ function App() {
 
       {/* Mobile D-Pad Overlay */}
       <div className="d-pad-container pointer-events-auto">
-        <button className="d-pad-btn up" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({key: 'ArrowUp'}); }}><ArrowUp size={32} /></button>
-        <button className="d-pad-btn left" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({key: 'ArrowLeft'}); }}><ArrowLeft size={32} /></button>
-        <button className="d-pad-btn right" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({key: 'ArrowRight'}); }}><ArrowRight size={32} /></button>
-        <button className="d-pad-btn down" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({key: 'ArrowDown'}); }}><ArrowDown size={32} /></button>
+        <button className="d-pad-btn up" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({ key: 'ArrowUp' }); }}><ArrowUp size={32} /></button>
+        <button className="d-pad-btn left" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({ key: 'ArrowLeft' }); }}><ArrowLeft size={32} /></button>
+        <button className="d-pad-btn right" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({ key: 'ArrowRight' }); }}><ArrowRight size={32} /></button>
+        <button className="d-pad-btn down" onPointerDown={(e) => { e.preventDefault(); handleKeyDown({ key: 'ArrowDown' }); }}><ArrowDown size={32} /></button>
       </div>
     </div>
   );

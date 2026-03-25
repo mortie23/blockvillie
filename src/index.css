@@ -9,7 +9,7 @@
   --color-glass: rgba(255, 255, 255, 0.7);
   --color-glass-border: rgba(255, 255, 255, 0.5);
   --shadow-soft: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-  
+
   --tile-size: 80px;
 }
 
@@ -23,7 +23,8 @@ body {
   font-family: 'Outfit', sans-serif;
   background-color: var(--color-background);
   color: var(--color-text);
-  overflow: hidden; /* Prevent scrolling, it's a fixed viewport game */
+  overflow: hidden;
+  /* Prevent scrolling, it's a fixed viewport game */
   user-select: none;
 }
 
@@ -70,12 +71,14 @@ body {
 
 .game-container {
   width: 100vw;
-  height: 100dvh; /* dynamic viewport height accounts for mobile browser UI */
+  height: 100dvh;
+  /* dynamic viewport height accounts for mobile browser UI */
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
-  background: #a8e6cf; /* Base ground color */
+  background: #a8e6cf;
+  /* Base ground color */
   background-image: radial-gradient(#8bceb5 10%, transparent 10%);
   background-size: 40px 40px;
 }
@@ -86,7 +89,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none; /* Let clicks pass through to game if needed */
+  pointer-events: none;
+  /* Let clicks pass through to game if needed */
   z-index: 100;
   padding: 20px;
   display: flex;
@@ -114,14 +118,73 @@ body {
   font-size: 1.5rem;
 }
 
-.tile-0 { background: #88d49e; } /* Grass / Path (Green) */
-.tile-1 { 
-  background: #4ecdc4; 
-  border-radius: 8px;
-  border: 2px solid #3bb8af;
-  box-shadow: inset 0 2px 5px rgba(255,255,255,0.4);
-} /* Wall / Block */
-.tile-3 { background: #f5f5dc; } /* Beige / Indoor tiles */
+.tile-0 {
+  background: #88d49e;
+}
+
+/* Grass / Path (Green) */
+.tile-1 {
+  /* Orange brick base */
+  background-color: #ce7041;
+  background-image:
+    /* Subtle top-edge highlight per brick row for 3D feel */
+    repeating-linear-gradient(180deg,
+      rgba(255, 255, 255, 0.10) 0px,
+      rgba(255, 255, 255, 0.10) 5px,
+      transparent 5px,
+      transparent 20px),
+    /* Vertical mortar joints — even rows */
+    repeating-linear-gradient(90deg,
+      transparent 0px,
+      transparent 36px,
+      #7a5a40 36px,
+      #7a5a40 40px),
+    /* Vertical mortar joints — odd rows (offset by half brick + half mortar) */
+    repeating-linear-gradient(90deg,
+      transparent 0px,
+      transparent 36px,
+      #7a5a40 36px,
+      #7a5a40 40px),
+    /* Horizontal mortar lines */
+    repeating-linear-gradient(180deg,
+      transparent 0px,
+      transparent 16px,
+      #7a5a40 16px,
+      #7a5a40 20px);
+  background-size:
+    100% 20px,
+    /* highlight — full width, per brick row */
+    40px 40px,
+    /* even-row joints */
+    40px 40px,
+    /* odd-row joints */
+    100% 20px;
+  /* horizontal mortar */
+  background-position:
+    0 0,
+    /* highlight */
+    0 0,
+    /* even-row joints start at left edge */
+    20px 10px,
+    /* odd-row joints offset by half brick */
+    0 0;
+  /* horizontal mortar */
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+/* Wall / Brick */
+.tile-3 {
+  background: #f5f5dc;
+}
+
+/* Beige / Indoor tiles */
+.tile-4 {
+  background: #c8956c;
+}
+
+/* Orange paved stone / Outdoor paved (walkable) */
 
 /* Player */
 .player {
@@ -134,7 +197,7 @@ body {
   transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
   z-index: 10;
   font-size: 2rem;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
 }
 
 .player-sprite {
@@ -142,8 +205,13 @@ body {
 }
 
 @keyframes bounce {
-  from { transform: translateY(0); }
-  to { transform: translateY(-4px); }
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-4px);
+  }
 }
 
 /* Floating Items */
@@ -158,13 +226,21 @@ body {
   z-index: 5;
   animation: float 2s infinite ease-in-out;
   cursor: pointer;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
 }
 
 @keyframes float {
-  0% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-6px) scale(1.05); }
-  100% { transform: translateY(0) scale(1); }
+  0% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-6px) scale(1.05);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Modal Overlay */
@@ -195,8 +271,15 @@ body {
 }
 
 @keyframes popIn {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Closet Grid */
@@ -208,7 +291,7 @@ body {
 }
 
 .closet-item {
-  background: rgba(255,255,255,0.5);
+  background: rgba(255, 255, 255, 0.5);
   border: 2px solid transparent;
   border-radius: 16px;
   padding: 10px;
@@ -218,7 +301,7 @@ body {
 }
 
 .closet-item:hover {
-  background: rgba(255,255,255,0.8);
+  background: rgba(255, 255, 255, 0.8);
   transform: scale(1.05);
 }
 
@@ -250,16 +333,27 @@ body {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); filter: drop-shadow(0 0 8px rgba(255, 183, 3, 0.6)); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px rgba(255, 183, 3, 0.6));
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Mobile D-Pad Overlay */
 .d-pad-container {
-  display: none; /* Hidden by default on large screens */
+  display: none;
+  /* Hidden by default on large screens */
   position: absolute;
-  bottom: 130px; /* Moved up by the size of one grid tile (80px) */
+  bottom: 130px;
+  /* Moved up by the size of one grid tile (80px) */
   left: 50%;
   transform: translateX(-50%);
   width: 160px;
@@ -300,7 +394,22 @@ body {
   transform: scale(0.95);
 }
 
-.d-pad-btn.up { top: 0; left: 55px; }
-.d-pad-btn.down { bottom: 0; left: 55px; }
-.d-pad-btn.left { top: 55px; left: 0; }
-.d-pad-btn.right { top: 55px; right: 0; }
+.d-pad-btn.up {
+  top: 0;
+  left: 55px;
+}
+
+.d-pad-btn.down {
+  bottom: 0;
+  left: 55px;
+}
+
+.d-pad-btn.left {
+  top: 55px;
+  left: 0;
+}
+
+.d-pad-btn.right {
+  top: 55px;
+  right: 0;
+}
