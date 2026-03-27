@@ -18,29 +18,16 @@ const _outfitWorldDrops = Object.values(OUTFITS).flatMap(o =>
   }))
 );
 
-const INITIAL_ITEMS = {
-  playground: [
-    { id: 'd1', type: 'diamond', x: 8, y: 5 },
-    { id: 'd2', type: 'diamond', x: 13, y: 12 },
-  ],
-  school: [
-    ..._outfitWorldDrops.filter(o => o.spawnMap === 'school'),
-    { id: 'd3', type: 'diamond', x: 10, y: 3 },
-    { id: 'd4', type: 'diamond', x: 11, y: 8 },
-  ],
-  shops: [
-    { id: 'd5', type: 'diamond', x: 3, y: 8 },
-    { id: 'd6', type: 'diamond', x: 12, y: 5 },
-    { id: 'd7', type: 'diamond', x: 4, y: 13 },
-  ],
-  suburban_house: [
-    ..._outfitWorldDrops.filter(o => o.spawnMap === 'suburban_house'),
-    { id: 'dsh1', type: 'diamond', x: 4,  y: 10 }, // left bedroom
-    { id: 'dsh2', type: 'diamond', x: 21, y: 12 }, // main hall
-    { id: 'dsh3', type: 'diamond', x: 28, y: 14 }, // right bedroom
-    { id: 'dsh4', type: 'diamond', x: 25, y: 17 }, // hallway
-  ],
-};
+// Build INITIAL_ITEMS from per-map diamond data and outfit world drops.
+const INITIAL_ITEMS = Object.fromEntries(
+  Object.values(MAPS).map(map => [
+    map.id,
+    [
+      ..._outfitWorldDrops.filter(o => o.spawnMap === map.id),
+      ...(map.diamonds || []).map(d => ({ ...d, type: 'diamond' })),
+    ],
+  ])
+);
 
 // Shop items: outfits with price > 0 and no spawns.
 const SHOP_ITEMS = Object.values(OUTFITS)
@@ -48,15 +35,39 @@ const SHOP_ITEMS = Object.values(OUTFITS)
   .map(o => ({ id: `shop-${o.id}`, type: 'clothing', outfit: o, price: o.price }));
 
 function App() {
-  const [currentMapId, setCurrentMapId] = useState('playground');
-  const [playerPos, setPlayerPos] = useState({ x: MAPS['playground'].startX, y: MAPS['playground'].startY });
+  const [currentMapId, setCurrentMapId] = useState('suburban_house');
+  const [playerPos, setPlayerPos] = useState({ x: MAPS['suburban_house'].startX, y: MAPS['suburban_house'].startY });
 
   // Game State
   const [diamonds, setDiamonds] = useState(0);
   const [inventory, setInventory] = useState([]); // Array of clothing objects
   const [equipped, setEquipped] = useState(null); // ID of equipped clothing
   const [worldItems, setWorldItems] = useState(INITIAL_ITEMS);
-  const [activeCharacter, setActiveCharacter] = useState(CHARACTERS[0]);
+  const [activeCharacter, setActiveCharacter] = useState(CHARACTERS.find(c => c.name === 'Kylie') || CHARACTERS[0]);
+  const [possessions, setPossessions] = useState([]);
+  const [completedMissions, setCompletedMissions] = useState({});
+
+  // Health (time remaining)
+  const MAX_HEALTH = 3;
+  const [health, setHealth] = useState(MAX_HEALTH);
+  const [invincible, setInvincible] = useState(false);
+  const [hitFlash, setHitFlash] = useState(false);
+
+  // Toast notifications
+  const [toasts, setToasts] = useState([]);
+
+  // Obstacle glow set (obstacle ids currently glowing)
+  const [glowingObstacles, setGlowingObstacles] = useState(new Set());
+
+  // Active obstacles — keyed by mapId, each entry is array of { id, type, x, y, dir }
+  const [activeObstacles, setActiveObstacles] = useState(() =>
+    Object.fromEntries(
+      Object.values(MAPS).map(m => [
+        m.id,
+        (m.obstacles || []).map(o => ({ ...o })), // deep-copy so we can mutate pos
+      ])
+    )
+  );
 
   // Window size tracking for camera clamp
   const [windowSize, setWindowSize] = useState({
@@ -76,6 +87,14 @@ function App() {
 
   // Current map data
   const mapData = MAPS[currentMapId];
+
+  // Show splash on initial load
+  useEffect(() => {
+    if (mapData.mission && !completedMissions[currentMapId]) {
+      setActiveModal('mission_splash');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle Movement
   const handleKeyDown = useCallback((e) => {
@@ -112,6 +131,115 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
+  // ── Obstacle movement tick ──────────────────────────────────────────────────
+  // We keep refs for values we need inside the interval without re-creating it.
+  const playerPosRef = React.useRef(playerPos);
+  useEffect(() => { playerPosRef.current = playerPos; }, [playerPos]);
+
+  const healthRef = React.useRef(health);
+  useEffect(() => { healthRef.current = health; }, [health]);
+
+  const invincibleRef = React.useRef(invincible);
+  useEffect(() => { invincibleRef.current = invincible; }, [invincible]);
+
+  const currentMapIdRef = React.useRef(currentMapId);
+  useEffect(() => { currentMapIdRef.current = currentMapId; }, [currentMapId]);
+
+  // Helper: is (nx, ny) a walkable, non-static-object cell on the given map?
+  const isCellWalkable = useCallback((mapDef, nx, ny) => {
+    if (ny < 0 || ny >= mapDef.height || nx < 0 || nx >= mapDef.width) return false;
+    const tile = mapDef.data[ny][nx];
+    if (tile !== 0 && tile !== 3 && tile !== 4) return false;
+    const blocked = (mapDef.objects || []).some(obj => {
+      const w = obj.type.width || 1;
+      const h = obj.type.height || 1;
+      return nx >= obj.x && nx < obj.x + w && ny >= obj.y && ny < obj.y + h;
+    });
+    return !blocked;
+  }, []);
+
+  useEffect(() => {
+    const TICK_MS = 500;
+    // Each obstacle advances one step every (speed / TICK_MS) ticks.
+    // We track a per-obstacle tick counter to support different speeds.
+    const tickCounters = {};
+
+    const interval = setInterval(() => {
+      const mapId = currentMapIdRef.current;
+      const mapDef = MAPS[mapId];
+
+      setActiveObstacles(prev => {
+        const mapObs = prev[mapId];
+        if (!mapObs || mapObs.length === 0) return prev;
+
+        const updated = mapObs.map(obs => {
+          // Speed: steps per second → ticks to skip
+          const ticksPerStep = Math.max(1, Math.round((obs.type.speed * 1000) / TICK_MS));
+          tickCounters[obs.id] = (tickCounters[obs.id] || 0) + 1;
+          if (tickCounters[obs.id] < ticksPerStep) return obs; // not time to move yet
+          tickCounters[obs.id] = 0;
+
+          // Compute candidate next position
+          let nx = obs.x + (obs.type.axis === 'x' ? obs.dir : 0);
+          let ny = obs.y + (obs.type.axis === 'y' ? obs.dir : 0);
+          let newDir = obs.dir;
+
+          if (!isCellWalkable(mapDef, nx, ny)) {
+            // Bounce — try reverse
+            newDir = -obs.dir;
+            nx = obs.x + (obs.type.axis === 'x' ? newDir : 0);
+            ny = obs.y + (obs.type.axis === 'y' ? newDir : 0);
+            // If still not walkable, stay put
+            if (!isCellWalkable(mapDef, nx, ny)) {
+              nx = obs.x;
+              ny = obs.y;
+              newDir = obs.dir;
+            }
+          }
+
+          return { ...obs, x: nx, y: ny, dir: newDir };
+        });
+
+        // Check collision with player after moving
+        const { x: px, y: py } = playerPosRef.current;
+        const hitObs = updated.find(o => o.x === px && o.y === py);
+        if (hitObs && !hitObs.type.canCollect && !invincibleRef.current && healthRef.current > 0) {
+          setHealth(h => {
+            const next = h - hitObs.type.damage;
+            if (next <= 0) {
+              setActiveModal('gameover');
+              return 0;
+            }
+            return next;
+          });
+          setInvincible(true);
+          setHitFlash(true);
+          setTimeout(() => setHitFlash(false), 400);
+          setTimeout(() => setInvincible(false), 1500);
+
+          // Toast message
+          if (hitObs.type.hitMessage) {
+            const toastId = `toast-${Date.now()}`;
+            setToasts(prev => [...prev, { id: toastId, message: hitObs.type.hitMessage }]);
+            setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+          }
+
+          // Obstacle glow
+          setGlowingObstacles(prev => new Set([...prev, hitObs.id]));
+          setTimeout(() => setGlowingObstacles(prev => {
+            const next = new Set(prev);
+            next.delete(hitObs.id);
+            return next;
+          }), 1000);
+        }
+
+        return { ...prev, [mapId]: updated };
+      });
+    }, TICK_MS);
+
+    return () => clearInterval(interval);
+  }, [isCellWalkable]); // stable — runs once
+
   // Check for items on current tile
   useEffect(() => {
     const itemsOnMap = worldItems[currentMapId] || [];
@@ -132,7 +260,46 @@ function App() {
         setActiveModal('clothing');
       }
     }
-  }, [playerPos, currentMapId, worldItems]);
+
+    // Check for collectable obstacles on current tile
+    const obsOnMap = activeObstacles[currentMapId] || [];
+    const hitObs = obsOnMap.find(o => o.x === playerPos.x && o.y === playerPos.y);
+    if (hitObs && hitObs.type.canCollect) {
+      setPossessions(prev => {
+        if (prev.some(p => p.id === hitObs.type.id)) return prev;
+        return [...prev, hitObs.type];
+      });
+      setActiveObstacles(prev => ({
+        ...prev,
+        [currentMapId]: prev[currentMapId].filter(o => o.id !== hitObs.id)
+      }));
+      if (hitObs.type.hitMessage) {
+        const toastId = `toast-${Date.now()}`;
+        setToasts(prev => [...prev, { id: toastId, message: hitObs.type.hitMessage }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+      }
+    }
+  }, [playerPos, currentMapId, worldItems, activeObstacles]);
+
+  // Evaluate Mission
+  useEffect(() => {
+    const mission = mapData.mission;
+    if (!mission || completedMissions[currentMapId]) return;
+
+    const hasItems = mission.items.every(itemId => possessions.some(p => p.id === itemId));
+    const equippedItem = inventory.find(i => i.id === equipped);
+    const hasOutfit = equippedItem && equippedItem.outfit.id === mission.outfit;
+    const target = mission.target;
+    
+    // Player must be adjacent or within the target rect (since target might be solid)
+    const isAtTarget = playerPos.x >= target.x - 1 && playerPos.x <= target.x + target.width &&
+                       playerPos.y >= target.y - 1 && playerPos.y <= target.y + target.height;
+
+    if (hasItems && hasOutfit && isAtTarget) {
+      setCompletedMissions(prev => ({ ...prev, [currentMapId]: true }));
+      setActiveModal('missioncomplete');
+    }
+  }, [playerPos, equipped, possessions, mapData, currentMapId, completedMissions, inventory]);
 
   const acceptClothing = (equipIndex) => {
     if (!pendingItem) return;
@@ -159,6 +326,27 @@ function App() {
   const changeMap = (newMapId) => {
     setCurrentMapId(newMapId);
     setPlayerPos({ x: MAPS[newMapId].startX, y: MAPS[newMapId].startY });
+    if (MAPS[newMapId].mission && !completedMissions[newMapId]) {
+      setActiveModal('mission_splash');
+    } else {
+      setActiveModal(null);
+    }
+  };
+
+  const restartGame = () => {
+    setHealth(MAX_HEALTH);
+    setInvincible(false);
+    setHitFlash(false);
+    setPlayerPos({ x: MAPS[currentMapId].startX, y: MAPS[currentMapId].startY });
+    // Reset obstacles to their initial positions from map definition
+    setActiveObstacles(
+      Object.fromEntries(
+        Object.values(MAPS).map(m => [
+          m.id,
+          (m.obstacles || []).map(o => ({ ...o })),
+        ])
+      )
+    );
     setActiveModal(null);
   };
 
@@ -176,10 +364,22 @@ function App() {
   const clampedY = mapHeightPx > windowSize.h ? Math.max(halfH, Math.min(idealY, mapHeightPx - halfH)) : mapHeightPx / 2;
 
   return (
-    <div className="game-container">
+    <div className={`game-container${hitFlash ? ' hit' : ''}`}>
       {/* Background UI Layer */}
       <div className="ui-layer">
         <div className="top-bar pointer-events-auto">
+          {/* Health Bar — sand timers */}
+          <div className="glass-panel time-bar">
+            {Array.from({ length: MAX_HEALTH }).map((_, i) => (
+              <span
+                key={i}
+                className={`time-slot${i < health ? '' : ' lost'}`}
+              >
+                {i < health ? '⏳' : '⌛'}
+              </span>
+            ))}
+          </div>
+
           <div className="glass-panel diamond-counter">
             <Diamond className="diamond-icon" fill="#ffb703" color="#ffb703" size={24} />
             {diamonds}
@@ -191,6 +391,9 @@ function App() {
             </button>
             <button className="button" style={{ background: '#4ecdc4', color: '#fff' }} onClick={() => setActiveModal('characters')}>
               <Users size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Characters
+            </button>
+            <button className="button" onClick={() => setActiveModal('possessions')}>
+              🎒 Possessions
             </button>
             <button className="button" onClick={() => setActiveModal('closet')}>
               👗 Closet
@@ -260,6 +463,23 @@ function App() {
           </div>
         ))}
 
+        {/* Moving Obstacles */}
+        {(activeObstacles[currentMapId] || []).map(obs => (
+          <img
+            key={obs.id}
+            src={obs.type.src}
+            alt={obs.type.label}
+            className={`obstacle-sprite${glowingObstacles.has(obs.id) ? ' glowing' : ''}`}
+            style={{
+              left: obs.x * TILE_SIZE,
+              top: obs.y * TILE_SIZE,
+              width: obs.type.width * TILE_SIZE,
+              height: obs.type.height * TILE_SIZE,
+              transform: obs.dir === -1 && obs.type.axis === 'x' ? 'scaleX(-1)' : 'none',
+            }}
+          />
+        ))}
+
         {/* Player Sprite */}
         <div className="player player-sprite" style={{ left: playerPos.x * TILE_SIZE, top: playerPos.y * TILE_SIZE }}>
           <div style={{
@@ -296,6 +516,28 @@ function App() {
       </div>
 
       {/* Modals */}
+      {activeModal === 'gameover' && (
+        <div className="modal-overlay">
+          <div className="glass-panel modal-content" style={{ maxWidth: '400px' }}>
+            <div style={{ fontSize: '4rem' }}>⌛</div>
+            <h2 style={{ color: '#e63946', fontSize: '2rem' }}>Out of Time!</h2>
+            <p style={{ color: '#555' }}>You ran out of time before finishing your mission.</p>
+            <button className="button" style={{ background: '#e63946', fontSize: '1.1rem', padding: '14px 30px' }} onClick={restartGame}>
+              ⏳ Try Again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Toast notifications */}
+      <div className="toast-container">
+        {toasts.map(toast => (
+          <div key={toast.id} className="toast">
+            ⌛ {toast.message}
+          </div>
+        ))}
+      </div>
+
       {activeModal === 'clothing' && pendingItem && (
         <div className="modal-overlay">
           <div className="glass-panel modal-content">
@@ -426,6 +668,64 @@ function App() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeModal === 'possessions' && (
+        <div className="modal-overlay">
+          <div className="glass-panel modal-content" style={{ maxWidth: '600px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2>Your Possessions</h2>
+              <button className="button secondary" style={{ padding: '5px 10px' }} onClick={() => setActiveModal(null)}><X size={20} /></button>
+            </div>
+            {possessions.length === 0 ? (
+              <p style={{ padding: '40px', color: '#666' }}>You have no possessions yet. Explore the map to find some!</p>
+            ) : (
+              <div className="closet-grid">
+                {possessions.map(item => (
+                  <div key={item.id} className="closet-item">
+                    <img src={item.src} alt={item.label} style={{ width: 56, height: 56, objectFit: 'contain', margin: '0 auto', display: 'block' }} />
+                    <div style={{ fontSize: '0.9rem', marginTop: '10px', textAlign: 'center' }}>{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeModal === 'missioncomplete' && (
+        <div className="modal-overlay">
+          <div className="glass-panel modal-content" style={{ maxWidth: '400px' }}>
+            <div style={{ fontSize: '4rem', textAlign: 'center' }}>⭐</div>
+            <h2 style={{ color: '#ffb703', fontSize: '2rem', textAlign: 'center' }}>Mission Complete!</h2>
+            <p style={{ color: '#555', textAlign: 'center' }}>You've successfully completed the area mission!</p>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+              <button className="button" style={{ background: '#4ecdc4', fontSize: '1.1rem', padding: '14px 30px' }} onClick={() => setActiveModal(null)}>
+                Awesome!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeModal === 'mission_splash' && mapData.mission && (
+        <div className="modal-overlay">
+          <div className="glass-panel modal-content" style={{ maxWidth: '500px' }}>
+            <h2 style={{ color: '#4ecdc4', fontSize: '2rem' }}>Area Mission!</h2>
+            <p style={{ fontSize: '1.2rem', margin: '20px 0' }}>{mapData.mission.description}</p>
+            <div style={{ textAlign: 'left', marginBottom: '20px', background: 'rgba(0,0,0,0.1)', padding: '15px', borderRadius: '10px' }}>
+              <strong>Objectives:</strong>
+              <ul style={{ listStyle: 'none', padding: 0, marginTop: '10px' }}>
+                <li>👗 Wear: {mapData.mission.outfit.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</li>
+                <li>🎒 Find: {mapData.mission.items.map(i => i.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')).join(', ')}</li>
+                <li>📍 Reach: Target Location</li>
+              </ul>
+            </div>
+            <button className="button" style={{ background: '#4ecdc4', width: '100%', padding: '15px', fontSize: '1.2rem' }} onClick={() => setActiveModal(null)}>
+              Start!
+            </button>
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import schoolUniform from './school-uniform.png';
 import yellowPyjamas from './yellow-pyjamas.png';
+import crows from './crows.png';
 
 /**
  * Outfit descriptor — mirrors the MAP_XX_OBJECTS pattern.
@@ -30,6 +31,15 @@ export const OUTFITS = {
     price: 3,
     spawns: [
       { map: 'suburban_house', x: 15, y: 14 },
+    ],
+  },
+  'crows': {
+    id: 'crows',
+    name: 'Crows',
+    src: crows,
+    price: 10,
+    spawns: [
+      { map: 'suburban_house', x: 10, y: 12 },
     ],
   },
 };

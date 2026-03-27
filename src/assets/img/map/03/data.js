@@ -19,3 +19,9 @@ export const MAP_03_OBJECTS = {
     src: fountain,
   }
 };
+
+export const MAP_03_DIAMONDS = [
+  { id: 'd5', x: 3, y: 8 },
+  { id: 'd6', x: 12, y: 5 },
+  { id: 'd7', x: 4, y: 13 },
+];

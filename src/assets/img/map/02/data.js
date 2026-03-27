@@ -19,3 +19,8 @@ export const MAP_02_OBJECTS = {
     src: dizzywizzy,
   }
 };
+
+export const MAP_02_DIAMONDS = [
+  { id: 'd1', x: 8, y: 5 },
+  { id: 'd2', x: 13, y: 12 },
+];

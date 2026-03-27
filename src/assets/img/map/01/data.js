@@ -19,3 +19,8 @@ export const MAP_01_OBJECTS = {
     src: schoolSwing,
   }
 };
+
+export const MAP_01_DIAMONDS = [
+  { id: 'd3', x: 10, y: 3 },
+  { id: 'd4', x: 11, y: 8 },
+];
