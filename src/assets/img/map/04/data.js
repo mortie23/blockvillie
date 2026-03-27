@@ -6,6 +6,9 @@ import threeSeaterCouch from './three-seater-couch.png';
 import bookcase from './bookcase.png';
 import tv from './tv.png';
 import suv from './suv.png';
+import kitchenSink from './kitchen-sink.png';
+import toilet from './toilet.png';
+import shower from './shower.png';
 
 export const MAP_04_OBJECTS = {
   'circle-dining-table-chairs': {
@@ -71,6 +74,30 @@ export const MAP_04_OBJECTS = {
     width: 4,
     height: 4,
     src: suv,
+  },
+  'kitchen-sink': {
+    id: 'kitchen-sink',
+    map: 'suburban_house',
+    location: 'inside',
+    width: 2,
+    height: 1,
+    src: kitchenSink,
+  },
+  'toilet': {
+    id: 'toilet',
+    map: 'suburban_house',
+    location: 'inside',
+    width: 1,
+    height: 1,
+    src: toilet,
+  },
+  'shower': {
+    id: 'shower',
+    map: 'suburban_house',
+    location: 'inside',
+    width: 1,
+    height: 1,
+    src: shower,
   }
 };
 

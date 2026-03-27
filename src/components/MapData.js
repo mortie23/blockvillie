@@ -99,6 +99,13 @@ export const MAPS = {
       { type: MAP_04_OBJECTS['tv'], x: 27, y: 14 },
       /* SUV */
       { type: MAP_04_OBJECTS['suv'], x: 11, y: 20 },
+      /* kitchen sink */
+      { type: MAP_04_OBJECTS['kitchen-sink'], x: 24, y: 8 },
+      /* toilet */
+      { type: MAP_04_OBJECTS['toilet'], x: 16, y: 8 },
+      /* shower */
+      { type: MAP_04_OBJECTS['shower'], x: 13, y: 8 },
+      { type: MAP_04_OBJECTS['shower'], x: 10, y: 8 },
     ]
   },
   playground: {
