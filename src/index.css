@@ -186,6 +186,57 @@ body {
 
 /* Orange paved stone / Outdoor paved (walkable) */
 
+/* Sand pit (walkable) */
+.tile-5 {
+  background: #e9c46a;
+  background-image:
+    radial-gradient(#d4af37 15%, transparent 15%),
+    radial-gradient(#cda434 10%, transparent 10%);
+  background-size: 8px 8px, 12px 12px;
+  background-position: 0 0, 4px 4px;
+}
+
+/* Bitumen for car park (walkable) */
+.tile-6 {
+  background: #333333;
+  background-image:
+    radial-gradient(#222 15%, transparent 15%),
+    radial-gradient(#444 15%, transparent 15%);
+  background-size: 12px 12px;
+  background-position: 0 0, 6px 6px;
+}
+
+/* Outside fence (unwalkable) */
+.tile-7 {
+  background: #706459;
+  background-image: repeating-linear-gradient(90deg,
+      transparent,
+      transparent 10px,
+      #7f8c8d 10px,
+      #7f8c8d 14px), repeating-linear-gradient(0deg,
+      transparent,
+      transparent 20px,
+      #95a5a6 20px,
+      #95a5a6 24px);
+}
+
+/* Tan bark/wood chip (walkable) */
+.tile-8 {
+  background: #8b4513;
+  background-image: repeating-linear-gradient(45deg,
+      #a0522d 25%,
+      transparent 25%,
+      transparent 75%,
+      #a0522d 75%,
+      #a0522d), repeating-linear-gradient(-45deg,
+      #a0522d 25%,
+      transparent 25%,
+      transparent 75%,
+      #a0522d 75%,
+      #a0522d);
+  background-size: 20px 20px;
+}
+
 /* Player */
 .player {
   position: absolute;
@@ -241,6 +292,10 @@ body {
   100% {
     transform: translateY(0) scale(1);
   }
+}
+
+.floating-collectable {
+  animation: float 2s infinite ease-in-out;
 }
 
 /* Modal Overlay */
@@ -426,7 +481,7 @@ body {
   font-size: 1.8rem;
   line-height: 1;
   transition: transform 0.25s, opacity 0.3s, filter 0.3s;
-  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.15));
 }
 
 .time-slot.lost {
@@ -457,21 +512,33 @@ body {
   font-weight: 600;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
   animation: toast-slide-in 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
-             toast-fade-out 0.4s ease-in 2.6s forwards;
+    toast-fade-out 0.4s ease-in 2.6s forwards;
   max-width: 320px;
 }
 
 @keyframes toast-slide-in {
-  from { transform: translateX(110%); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
+  from {
+    transform: translateX(110%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes toast-fade-out {
-  from { opacity: 1; }
-  to   { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
 }
 
 /* ── Moving Obstacle Sprite ──────────────────────────────────────────────── */
@@ -479,15 +546,23 @@ body {
   position: absolute;
   object-fit: contain;
   z-index: 8;
-  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.25));
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.25));
   transition: left 0.45s linear, top 0.45s linear, filter 0.2s;
   image-rendering: auto;
 }
 
 @keyframes obstacle-glow {
-  0%   { filter: drop-shadow(0 0 0px   #f4d03f) brightness(1);   }
-  40%  { filter: drop-shadow(0 0 14px  #f4d03f) brightness(1.45); }
-  100% { filter: drop-shadow(0 0 0px   #f4d03f) brightness(1);   }
+  0% {
+    filter: drop-shadow(0 0 0px #f4d03f) brightness(1);
+  }
+
+  40% {
+    filter: drop-shadow(0 0 14px #f4d03f) brightness(1.45);
+  }
+
+  100% {
+    filter: drop-shadow(0 0 0px #f4d03f) brightness(1);
+  }
 }
 
 .obstacle-sprite.glowing {
@@ -496,8 +571,13 @@ body {
 
 /* ── Hit Flash ───────────────────────────────────────────────────────────── */
 @keyframes hit-flash {
-  0%   { background-color: rgba(230, 57, 70, 0.35); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: rgba(230, 57, 70, 0.35);
+  }
+
+  100% {
+    background-color: transparent;
+  }
 }
 
 .game-container.hit {

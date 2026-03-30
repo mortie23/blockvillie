@@ -109,9 +109,9 @@ function App() {
     // Bounds check
     if (y < 0 || y >= mapData.height || x < 0 || x >= mapData.width) return;
 
-    // Collision check (1=wall)
+    // Collision check
     const tileType = mapData.data[y][x];
-    if (tileType !== 0 && tileType !== 3 && tileType !== 4) return;
+    if (![0, 3, 4, 5, 6, 8].includes(tileType)) return;
 
     // Static Object Collision
     const isStaticObject = (mapData.objects || []).some(obj => {
@@ -149,7 +149,7 @@ function App() {
   const isCellWalkable = useCallback((mapDef, nx, ny) => {
     if (ny < 0 || ny >= mapDef.height || nx < 0 || nx >= mapDef.width) return false;
     const tile = mapDef.data[ny][nx];
-    if (tile !== 0 && tile !== 3 && tile !== 4) return false;
+    if (![0, 3, 4, 5, 6, 8].includes(tile)) return false;
     const blocked = (mapDef.objects || []).some(obj => {
       const w = obj.type.width || 1;
       const h = obj.type.height || 1;
@@ -363,6 +363,14 @@ function App() {
   const clampedX = mapWidthPx > windowSize.w ? Math.max(halfW, Math.min(idealX, mapWidthPx - halfW)) : mapWidthPx / 2;
   const clampedY = mapHeightPx > windowSize.h ? Math.max(halfH, Math.min(idealY, mapHeightPx - halfH)) : mapHeightPx / 2;
 
+  // Visible windowing calc (buffer of 2 extra tiles)
+  const cameraLeft = clampedX - halfW;
+  const cameraTop = clampedY - halfH;
+  const minX = Math.max(0, Math.floor(cameraLeft / TILE_SIZE) - 2);
+  const maxX = Math.min(mapData.width - 1, Math.ceil((cameraLeft + windowSize.w) / TILE_SIZE) + 2);
+  const minY = Math.max(0, Math.floor(cameraTop / TILE_SIZE) - 2);
+  const maxY = Math.min(mapData.height - 1, Math.ceil((cameraTop + windowSize.h) / TILE_SIZE) + 2);
+
   return (
     <div className={`game-container${hitFlash ? ' hit' : ''}`}>
       {/* Background UI Layer */}
@@ -420,17 +428,30 @@ function App() {
         <div className="map-grid" style={{
           width: mapData.width * TILE_SIZE,
           height: mapData.height * TILE_SIZE,
-          gridTemplateColumns: `repeat(${mapData.width}, ${TILE_SIZE}px)`,
           position: 'absolute',
           top: 0, left: 0
         }}>
-          {mapData.data.flat().map((tile, i) => (
-            <div key={i} className={`tile tile-${tile}`}></div>
-          ))}
+          {(() => {
+            const tiles = [];
+            for (let y = minY; y <= maxY; y++) {
+              for (let x = minX; x <= maxX; x++) {
+                tiles.push(
+                  <div key={`${x}-${y}`} className={`tile tile-${mapData.data[y][x]}`} style={{ position: 'absolute', left: x * TILE_SIZE, top: y * TILE_SIZE }} />
+                );
+              }
+            }
+            return tiles;
+          })()}
         </div>
 
         {/* Static Image Map Objects */}
-        {(mapData.objects || []).map((obj, i) => (
+        {(mapData.objects || [])
+          .filter(obj => {
+            const w = obj.type.width || 1;
+            const h = obj.type.height || 1;
+            return obj.x + w >= minX && obj.x <= maxX && obj.y + h >= minY && obj.y <= maxY;
+          })
+          .map((obj, i) => (
           <img
             key={`obj-${i}`}
             src={obj.type.src}
@@ -449,7 +470,9 @@ function App() {
         ))}
 
         {/* World Items */}
-        {(worldItems[currentMapId] || []).map((item) => (
+        {(worldItems[currentMapId] || [])
+          .filter(item => item.x >= minX && item.x <= maxX && item.y >= minY && item.y <= maxY)
+          .map((item) => (
           <div key={item.id} className="floating-item" style={{ left: item.x * TILE_SIZE, top: item.y * TILE_SIZE }}>
             {item.type === 'diamond' ? (
               <Diamond fill="#ffb703" color="#fb8500" size={48} className="diamond-icon" />
@@ -464,18 +487,24 @@ function App() {
         ))}
 
         {/* Moving Obstacles */}
-        {(activeObstacles[currentMapId] || []).map(obs => (
+        {(activeObstacles[currentMapId] || [])
+          .filter(obs => {
+            const w = obs.type.width || 1;
+            const h = obs.type.height || 1;
+            return obs.x + w >= minX && obs.x <= maxX && obs.y + h >= minY && obs.y <= maxY;
+          })
+          .map(obs => (
           <img
             key={obs.id}
             src={obs.type.src}
             alt={obs.type.label}
-            className={`obstacle-sprite${glowingObstacles.has(obs.id) ? ' glowing' : ''}`}
+            className={`obstacle-sprite${glowingObstacles.has(obs.id) ? ' glowing' : ''}${obs.type.canCollect ? ' floating-collectable' : ''}`}
             style={{
               left: obs.x * TILE_SIZE,
               top: obs.y * TILE_SIZE,
               width: obs.type.width * TILE_SIZE,
               height: obs.type.height * TILE_SIZE,
-              transform: obs.dir === -1 && obs.type.axis === 'x' ? 'scaleX(-1)' : 'none',
+              transform: obs.type.canCollect ? undefined : (obs.dir === -1 && obs.type.axis === 'x' ? 'scaleX(-1)' : 'none'),
             }}
           />
         ))}

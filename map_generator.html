@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Map Array Generator</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    h2 { color: #4ecdc4; margin-top: 0; }
+    .instructions { background: #e8f8f5; padding: 15px; border-left: 4px solid #4ecdc4; margin-bottom: 20px; border-radius: 4px; }
+    canvas { border: 1px solid #ddd; border-radius: 4px; max-width: 100%; margin-top: 15px; display: block; image-rendering: pixelated;}
+    textarea { width: 100%; height: 300px; margin-top: 15px; font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+    input[type="file"] { display: block; margin: 10px 0; padding: 10px; font-size: 16px; width: 100%; border: 2px dashed #ccc; border-radius: 6px; cursor: pointer; }
+    .color-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .color-box { display: flex; align-items: center; gap: 5px; font-size: 12px; padding: 4px 8px; border-radius: 12px; background: #f8f8f8; border: 1px solid #eee; }
+    .swatch { width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🗺️ Blockvillie Map Array Generator</h2>
+    
+    <div class="instructions">
+      <p><strong>Instructions:</strong></p>
+      <ol>
+        <li>Right-click your sketch image from the chat and click "Save Image As...".</li>
+        <li>Click the file input below and select the saved image.</li>
+        <li>The tool will automatically resize it, sample the colors, and output the generated map array!</li>
+      </ol>
+    </div>
+
+    <div style="margin-bottom: 15px; background: #fff; padding: 15px; border-radius: 6px; border: 1px solid #eee;">
+      <label for="mapWidth" style="margin-right: 10px;"><strong>Map Width (Tiles):</strong></label>
+      <input type="number" id="mapWidth" value="150" min="10" max="1000" style="width: 80px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-right: 30px;">
+      
+      <label for="mapHeight" style="margin-right: 10px;"><strong>Map Height (Tiles):</strong></label>
+      <input type="number" id="mapHeight" value="150" min="10" max="1000" style="width: 80px; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+    </div>
+
+    <input type="file" id="imageInput" accept="image/*">
+    
+    <div id="legend" class="color-legend"></div>
+
+    <div style="display: flex; gap: 15px; margin-top: 20px;">
+      <div style="flex: 1;">
+        <h3 style="font-size: 14px; margin-bottom: 5px; color: #666;">Original Scaled Image</h3>
+        <canvas id="sourceCanvas" width="300" height="300"></canvas>
+      </div>
+      <div style="flex: 1;">
+        <h3 style="font-size: 14px; margin-bottom: 5px; color: #666;">Mapped Tiles Preview</h3>
+        <canvas id="previewCanvas" width="300" height="300"></canvas>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 30px;">Generated Array (Copy into MapData.js)</h3>
+    <textarea id="output" placeholder="Your array will appear here..."></textarea>
+  </div>
+
+  <script>
+    // Define the expected colors and their matching tile IDs
+    const COLOR_MAP = [
+      { id: 4, hex: '#e6e1cd', name: 'Beige (Paved path)' },
+      { id: 6, hex: '#9e9e9e', name: 'Grey (Bitumen)' },
+      { id: 3, hex: '#8a85b3', name: 'Purple (Inside)' },
+      { id: 1, hex: '#ff9800', name: 'Orange (Walls)' },
+      { id: 8, hex: '#795548', name: 'Brown (Tan bark)' },
+      { id: 0, hex: '#588a4c', name: 'Dark Green (Grass)' },
+      { id: 5, hex: '#ffeb3b', name: 'Yellow (Sandpit)' },
+      { id: 7, hex: '#000000', name: 'Black (Fence)' },
+      // Aliases to catch edge cases
+      { id: 0, hex: '#e0ffe0', name: 'Light Green -> Grass' },
+      { id: 4, hex: '#ffffff', name: 'White -> Paved path' }
+    ];
+
+    // Build the legend
+    const legend = document.getElementById('legend');
+    COLOR_MAP.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'color-box';
+      el.innerHTML = `<span class="swatch" style="background:${c.hex}"></span> ${c.name} [${c.id}]`;
+      legend.appendChild(el);
+    });
+
+    function hexToRgb(hex) {
+      const bigint = parseInt(hex.replace('#', ''), 16);
+      return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+    }
+    const colorRGBs = COLOR_MAP.map(c => ({...c, rgb: hexToRgb(c.hex)}));
+
+    // Find the closest tile ID using geometric distance of RGB values
+    function getClosestColor(r, g, b, a) {
+      if (a < 128) return colorRGBs[0]; // fallback
+      let minDist = Infinity;
+      let closestColor = colorRGBs[0];
+      for (const color of colorRGBs) {
+        // Simple Euclidean distance in RGB space
+        const dist = Math.pow(r - color.rgb[0], 2) + Math.pow(g - color.rgb[1], 2) + Math.pow(b - color.rgb[2], 2);
+        if (dist < minDist) {
+          minDist = dist;
+          closestColor = color;
+        }
+      }
+      return closestColor;
+    }
+
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const img = new Image();
+      img.onload = function() {
+        const targetW = parseInt(document.getElementById('mapWidth').value, 10) || 150;
+        const targetH = parseInt(document.getElementById('mapHeight').value, 10) || 150;
+        
+        // 1. Draw source image downscaled
+        const sCanvas = document.getElementById('sourceCanvas');
+        sCanvas.width = targetW;
+        sCanvas.height = targetH;
+        const sCtx = sCanvas.getContext('2d', { willReadFrequently: true });
+        // Use smooth scaling for better shape preservation before checking colors
+        sCtx.imageSmoothingEnabled = true; 
+        sCtx.drawImage(img, 0, 0, targetW, targetH);
+        const imgData = sCtx.getImageData(0, 0, targetW, targetH).data;
+
+        // 2. Prepare Preview Canvas
+        const pCanvas = document.getElementById('previewCanvas');
+        pCanvas.width = targetW;
+        pCanvas.height = targetH;
+        const pCtx = pCanvas.getContext('2d');
+        const pImgData = pCtx.createImageData(targetW, targetH);
+
+        let outputArray = [];
+        
+        // 3. Process every pixel
+        for (let y = 0; y < targetH; y++) {
+          let row = [];
+          for (let x = 0; x < targetW; x++) {
+            const i = (y * targetW + x) * 4;
+            const r = imgData[i];
+            const g = imgData[i+1];
+            const b = imgData[i+2];
+            const a = imgData[i+3];
+            
+            const match = getClosestColor(r, g, b, a);
+            row.push(match.id);
+            
+            // Draw matched color to preview canvas
+            pImgData.data[i] = match.rgb[0];
+            pImgData.data[i+1] = match.rgb[1];
+            pImgData.data[i+2] = match.rgb[2];
+            pImgData.data[i+3] = 255; // Alpha
+          }
+          outputArray.push(row);
+        }
+
+        pCtx.putImageData(pImgData, 0, 0);
+
+        // 4. Format JSON Array String
+        document.getElementById('output').value = "export const MAP_SCHOOL_DATA = [\n" + 
+          outputArray.map(r => "  [" + r.join(",") + "]").join(",\n") + 
+          "\n];";
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  </script>
+</body>
+</html>
