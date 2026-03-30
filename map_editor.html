@@ -2,78 +2,121 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Map Array Editor</title>
+  <title>Map Array & Object Editor</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; margin: 0; }
     .container { display: flex; flex-direction: column; height: calc(100vh - 40px); gap: 15px; }
     .top-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     .main-workspace { display: flex; gap: 15px; flex: 1; min-height: 0; }
     
-    .sidebar { width: 350px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+    .sidebar { width: 380px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
     .canvas-wrapper { flex: 1; background: #e0e0e0; border-radius: 8px; overflow: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1) inset; position: relative; border: 2px solid #ccc; }
     
     h2, h3 { color: #4ecdc4; margin-top: 0; margin-bottom: 10px; }
     
-    .palette { display: grid; grid-template-columns: 1fr; gap: 8px; }
-    .color-btn { display: flex; align-items: center; gap: 10px; padding: 8px; border: 2px solid transparent; border-radius: 6px; background: #f8f9fa; cursor: pointer; text-align: left; font-size: 14px; transition: 0.2s; }
+    .palette { display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
+    .color-btn { display: flex; align-items: center; gap: 10px; padding: 8px; border: 2px solid transparent; border-radius: 6px; background: #f8f9fa; cursor: pointer; text-align: left; font-size: 14px; transition: 0.2s; word-break: break-all; }
     .color-btn:hover { background: #e9ecef; }
     .color-btn.active { border-color: #4ecdc4; background: #e8f8f5; font-weight: bold; }
-    .swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); box-sizing: border-box; }
+    .swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); box-sizing: border-box; flex-shrink: 0; }
     
-    canvas { background: white; display: block; image-rendering: pixelated; touch-action: none; }
+    canvas { background: white; display: block; image-rendering: pixelated; touch-action: none; transform-origin: top left; }
     
-    textarea { width: 100%; height: 180px; font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; resize: none; white-space: pre; }
+    textarea { width: 100%; height: 120px; font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; resize: vertical; white-space: pre; }
     
     .btn { background: #4ecdc4; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.2s; }
     .btn:hover { background: #3dbbb2; }
     .btn.secondary { background: #95a5a6; }
     .btn.secondary:hover { background: #7f8c8d; }
-    .btn.export { background: #ff9f1c; margin-top: 10px; width: 100%; }
-    .btn.export:hover { background: #f09218; }
+    .btn.active-mode { background: #ff9f1c; box-shadow: 0 0 0 3px rgba(255,159,28,0.3); }
     
     .control-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
-    input[type="number"] { width: 60px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+    input[type="number"], input[type="text"] { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
     
     .status { font-size: 12px; color: #666; font-style: italic; }
+    
+    .mode-panels > div { display: none; }
+    .mode-panels > div.active { display: flex; flex-direction: column; gap: 15px; }
+
+    .section-box { border: 1px solid #eee; padding: 10px; border-radius: 6px; background: #fafafa; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="top-panel">
       <div class="control-row">
-        <h2>🗺️ Blockvillie Map Editor</h2>
+        <h2>🗺️ Blockvillie Map & Object Editor</h2>
       </div>
       <div class="control-row">
-        <strong>Create Blanks:</strong>
-        <label>W:</label> <input type="number" id="newW" value="50" min="5" max="500">
-        <label>H:</label> <input type="number" id="newH" value="50" min="5" max="500">
-        <button class="btn secondary" id="btnCreateBlank">Create Blank Map</button>
+        <button class="btn active-mode" id="modeTileBtn">🎨 Tile Mode</button>
+        <button class="btn secondary" id="modeObjBtn">📦 Object Mode</button>
         
         <span style="margin: 0 15px; color: #ccc;">|</span>
         
         <strong>Zoom:</strong>
-        <input type="range" id="zoomCtrl" min="4" max="32" value="16"> <span id="zoomLabel">16px</span>
+        <input type="range" id="zoomCtrl" min="4" max="48" value="16"> <span id="zoomLabel">16px</span>
         
         <span style="margin: 0 15px; color: #ccc;">|</span>
-        <span class="status" id="statusMessage">Tip: Click and drag on the canvas to paint tiles.</span>
+        <span class="status" id="statusMessage">Tip: Use Tile Mode to paint the ground, Object mode to place items.</span>
       </div>
     </div>
 
     <div class="main-workspace">
       <div class="sidebar">
-        <div>
-          <h3>1. Tile Palette</h3>
-          <div class="palette" id="palette"></div>
-        </div>
         
-        <div style="flex: 1;">
-          <h3>2. Array Data (I/O)</h3>
-          <textarea id="ioBox" placeholder="Paste your map array here to load it...&#10;[&#10;  [0, 1, 0],&#10;  [0, 0, 0]&#10;]"></textarea>
-          <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button class="btn" id="btnLoad" style="flex: 1;">Load from Text</button>
+        <!-- TILE MODE PANEL -->
+        <div id="panelTile" class="mode-panels">
+          <div class="active">
+            <div class="section-box">
+              <h3>Create Blanks:</h3>
+              <label>W:</label> <input type="number" id="newW" value="50" min="5" max="500" style="width: 50px;">
+              <label>H:</label> <input type="number" id="newH" value="50" min="5" max="500" style="width: 50px;">
+              <button class="btn secondary" id="btnCreateBlank" style="margin-top: 5px; width: 100%;">Create</button>
+            </div>
+            
+            <div class="section-box">
+              <h3>Tile Palette</h3>
+              <div class="palette" id="tilePalette"></div>
+            </div>
+            
+            <div class="section-box">
+              <h3>Map Array Data (I/O)</h3>
+              <textarea id="ioBox" placeholder="Paste your map array here to load it...&#10;[&#10;  [0, 1, 0],&#10;  [0, 0, 0]&#10;]"></textarea>
+              <div style="display: flex; gap: 10px; margin-top: 5px;">
+                <button class="btn secondary" id="btnLoad" style="flex: 1;">Load Array</button>
+                <button class="btn" id="btnExport" style="flex: 1; background: #ff9f1c;">Export Array</button>
+              </div>
+            </div>
           </div>
-          <button class="btn export" id="btnExport">Export Array (Update Text)</button>
         </div>
+
+        <!-- OBJECT MODE PANEL -->
+        <div id="panelObj" class="mode-panels">
+          <div>
+            <div class="section-box" style="border-color: #ff9f1c; background: #fff5e6;">
+              <h3 style="color: #d35400;">Object Palette</h3>
+              <div class="palette" id="objPalette">
+                <button class="color-btn active" data-obj="ERASER" id="eraserBtn">
+                  <div class="swatch" style="background:#e74c3c;"></div> <span>🔴 Eraser (Delete)</span>
+                </button>
+              </div>
+              <div style="display:flex; gap: 5px; margin-top: 10px;">
+                <input type="text" id="newObjString" placeholder="MAP_01_OBJECTS['xyz']" style="flex:1; width: 100%;">
+              </div>
+              <button class="btn" id="btnAddObjType" style="width: 100%; margin-top: 5px;">+ Add Type to Palette</button>
+            </div>
+            
+            <div class="section-box">
+              <h3>Objects Data (I/O)</h3>
+              <textarea id="objIoBox" placeholder="Paste your objects array here...&#10;[&#10;  { type: MAP_01_OBJECTS['school-chair'], x: 4, y: 55 }&#10;]"></textarea>
+              <div style="display: flex; gap: 10px; margin-top: 5px;">
+                <button class="btn secondary" id="btnLoadObj" style="flex: 1;">Load Objects</button>
+                <button class="btn" id="btnExportObj" style="flex: 1; background: #ff9f1c;">Export Objects</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
       
       <div class="canvas-wrapper" id="canvasWrapper">
@@ -83,67 +126,110 @@
   </div>
 
   <script>
+    // --- GLOBAL STATE ---
     const TILE_COLORS = {
-      0: { color: '#88d49e', name: '0: Grass (Walkable)' },
-      1: { color: '#bc6c25', name: '1: Wall (Unwalkable)' },
+      0: { color: '#88d49e', name: '0: Grass' },
+      1: { color: '#bc6c25', name: '1: Wall (Solid)' },
       2: { color: '#1a1a1a', name: '2: Out of Bounds' },
       3: { color: '#fefae0', name: '3: Indoor Floor' },
       4: { color: '#c8956c', name: '4: Outdoor Paved' },
       5: { color: '#e9c46a', name: '5: Sand Pit' },
       6: { color: '#333333', name: '6: Bitumen/Tar' },
-      7: { color: '#7f8c8d', name: '7: Fence (Unwalkable)' },
+      7: { color: '#7f8c8d', name: '7: Fence (Solid)' },
       8: { color: '#8b4513', name: '8: Tan Bark' }
     };
 
+    let editorMode = 'tile'; // 'tile' or 'object'
+    
+    // Map State
     let mapData = []; // 2D array [y][x]
     let mapW = 0;
     let mapH = 0;
     let tileSize = 16;
     let selectedTile = 0;
     
+    // Object State
+    let objectsData = []; // array of { type: "MAP_XX['x']", x, y, id?, dir? }
+    let objectPaletteTypes = []; // string types "MAP_01_OBJECTS['school-chair']"
+    let selectedObjectType = 'ERASER';
+
+    // Mock setup for JS parsing
+    const makeProxy = (name) => new Proxy({}, { get: (t, p) => `${name}['${p}']` });
+    const PARSER_GLOBALS = {
+      MAP_01_OBJECTS: makeProxy('MAP_01_OBJECTS'),
+      MAP_02_OBJECTS: makeProxy('MAP_02_OBJECTS'),
+      MAP_03_OBJECTS: makeProxy('MAP_03_OBJECTS'),
+      MAP_04_OBJECTS: makeProxy('MAP_04_OBJECTS'),
+      INTERACTIVE_OBJECTS: makeProxy('INTERACTIVE_OBJECTS')
+    };
+
+    // --- DOM Elements ---
     const canvas = document.getElementById('mapCanvas');
     const ctx = canvas.getContext('2d', { alpha: false });
-    const paletteDiv = document.getElementById('palette');
-    const ioBox = document.getElementById('ioBox');
+    const tilePaletteDiv = document.getElementById('tilePalette');
+    const objPaletteDiv = document.getElementById('objPalette');
     const statusMsg = document.getElementById('statusMessage');
 
-    // 1. Initialize Palette
-    Object.keys(TILE_COLORS).forEach(id => {
-      const btn = document.createElement('button');
-      btn.className = `color-btn ${selectedTile == id ? 'active' : ''}`;
-      btn.innerHTML = `<div class="swatch" style="background:${TILE_COLORS[id].color}"></div> <span>${TILE_COLORS[id].name}</span>`;
-      btn.onclick = () => {
-        selectedTile = parseInt(id, 10);
-        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      };
-      paletteDiv.appendChild(btn);
-    });
+    // --- INITIALIZATION ---
+    function init() {
+      // Setup Tile Palette
+      Object.keys(TILE_COLORS).forEach(id => {
+        const btn = document.createElement('button');
+        btn.className = `color-btn ${selectedTile == id ? 'active' : ''}`;
+        btn.innerHTML = `<div class="swatch" style="background:${TILE_COLORS[id].color}"></div> <span>${TILE_COLORS[id].name}</span>`;
+        btn.onclick = () => {
+          selectedTile = parseInt(id, 10);
+          document.querySelectorAll('#tilePalette .color-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        };
+        tilePaletteDiv.appendChild(btn);
+      });
 
-    // 2. Render Canvas
+      // Default blank map
+      document.getElementById('btnCreateBlank').click();
+    }
+
+    // --- RENDER LOGIC ---
     function renderMap() {
       if (!mapData || !mapData.length) return;
       
       canvas.width = mapW * tileSize;
       canvas.height = mapH * tileSize;
       
-      // Clear
+      // 1. Draw Tiles
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Draw grid lines optional, but blocks are better
       for (let y = 0; y < mapH; y++) {
         for (let x = 0; x < mapW; x++) {
-          const tileId = mapData[y][x];
+          const tileId = mapData[y] && mapData[y][x] !== undefined ? mapData[y][x] : null;
           const colorObj = TILE_COLORS[tileId];
-          ctx.fillStyle = colorObj ? colorObj.color : '#ff00ff'; // magenta for unknown
+          ctx.fillStyle = colorObj ? colorObj.color : '#ff00ff';
           ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
         }
       }
       
-      // Draw grid
+      // 2. Draw Objects
+      for (const obj of objectsData) {
+        ctx.fillStyle = 'rgba(52, 152, 219, 0.7)'; // Transparent blue
+        ctx.fillRect(obj.x * tileSize, obj.y * tileSize, tileSize, tileSize);
+        
+        ctx.strokeStyle = '#2980b9';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(obj.x * tileSize, obj.y * tileSize, tileSize, tileSize);
+        
+        // Draw small label
+        if (tileSize >= 16) {
+          ctx.fillStyle = 'white';
+          ctx.font = '10px sans-serif';
+          const shortName = obj.type.split("'")[1] || 'obj';
+          ctx.fillText(shortName.substring(0, 5), obj.x * tileSize + 2, obj.y * tileSize + 12);
+        }
+      }
+
+      // 3. Draw Grid
       if (tileSize >= 8) {
-        ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         for (let x = 0; x <= mapW; x++) { ctx.moveTo(x * tileSize, 0); ctx.lineTo(x * tileSize, canvas.height); }
@@ -152,7 +238,7 @@
       }
     }
 
-    // 3. Interaction Logic
+    // --- INTERACTION LOGIC ---
     let isPainting = false;
     
     function getTileCoords(e) {
@@ -164,33 +250,61 @@
       return { x, y };
     }
 
-    function paint(e) {
+    function handleCanvasInteraction(e, isClick) {
       const { x, y } = getTileCoords(e);
-      if (x >= 0 && x < mapW && y >= 0 && y < mapH) {
+      if (x < 0 || x >= mapW || y < 0 || y >= mapH) return;
+
+      if (editorMode === 'tile') {
         if (mapData[y][x] !== selectedTile) {
           mapData[y][x] = selectedTile;
-          
-          // efficient redraw of single tile
-          ctx.fillStyle = TILE_COLORS[selectedTile].color;
-          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-          if (tileSize >= 8) {
-            ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-            ctx.strokeRect(x * tileSize, y * tileSize, tileSize, tileSize);
+          renderMap();
+        }
+      } else if (editorMode === 'object' && isClick) {
+        // Objects place only on click to avoid spamming
+        if (selectedObjectType === 'ERASER') {
+          // Find and remove object at mouse
+          objectsData = objectsData.filter(o => o.x !== x || o.y !== y);
+          renderMap();
+        } else {
+          // Avoid exact duplicates
+          const exists = objectsData.find(o => o.x === x && o.y === y && o.type === selectedObjectType);
+          if (!exists) {
+            objectsData.push({ type: selectedObjectType, x, y });
+            renderMap();
           }
         }
       }
     }
 
-    canvas.addEventListener('mousedown', (e) => { isPainting = true; paint(e); });
-    canvas.addEventListener('mousemove', (e) => { if (isPainting) paint(e); });
+    canvas.addEventListener('mousedown', (e) => { isPainting = true; handleCanvasInteraction(e, true); });
+    canvas.addEventListener('mousemove', (e) => { if (isPainting) handleCanvasInteraction(e, false); });
     window.addEventListener('mouseup', () => { isPainting = false; });
     
-    // For touch devices
-    canvas.addEventListener('touchstart', (e) => { isPainting = true; paint(e.touches[0]); e.preventDefault(); }, {passive: false});
-    canvas.addEventListener('touchmove', (e) => { if (isPainting) paint(e.touches[0]); e.preventDefault(); }, {passive: false});
-    window.addEventListener('touchend', () => { isPainting = false; });
+    // --- MODE SWITCHING ---
+    const modeTileBtn = document.getElementById('modeTileBtn');
+    const modeObjBtn = document.getElementById('modeObjBtn');
+    const panelTile = document.getElementById('panelTile').children[0];
+    const panelObj = document.getElementById('panelObj').children[0];
+    
+    modeTileBtn.onclick = () => {
+      editorMode = 'tile';
+      modeTileBtn.className = 'btn active-mode';
+      modeObjBtn.className = 'btn secondary';
+      panelTile.classList.add('active');
+      panelObj.classList.remove('active');
+      statusMsg.innerText = 'Tip: Click and drag on the canvas to paint tiles.';
+    };
+    
+    modeObjBtn.onclick = () => {
+      editorMode = 'object';
+      modeObjBtn.className = 'btn active-mode';
+      modeTileBtn.className = 'btn secondary';
+      panelObj.classList.add('active');
+      panelTile.classList.remove('active');
+      statusMsg.innerText = 'Tip: Click once on the map to place an object. Use Eraser to remove.';
+    };
 
-    // 4. UI Actions
+    // --- TILE BUTTONS (I/O) ---
     document.getElementById('btnCreateBlank').onclick = () => {
       const w = parseInt(document.getElementById('newW').value, 10);
       const h = parseInt(document.getElementById('newH').value, 10);
@@ -198,6 +312,7 @@
         mapW = w;
         mapH = h;
         mapData = Array(h).fill().map(() => Array(w).fill(selectedTile));
+        objectsData = [];
         renderMap();
         statusMsg.innerText = `Created blank ${w}x${h} map.`;
       }
@@ -205,41 +320,130 @@
 
     document.getElementById('btnLoad').onclick = () => {
       try {
-        const text = ioBox.value.trim();
+        const text = document.getElementById('ioBox').value.trim();
         if (!text) return;
-        
-        // Use Function to safely evaluate JS array format (deals with missing quotes better than JSON.parse)
         const parsed = new Function('return ' + text + ';')();
-        
         if (Array.isArray(parsed) && Array.isArray(parsed[0])) {
           mapData = parsed;
           mapH = mapData.length;
           mapW = mapData[0].length;
-          
           document.getElementById('newW').value = mapW;
           document.getElementById('newH').value = mapH;
           renderMap();
           statusMsg.innerText = `Loaded map: ${mapW}x${mapH} tiles.`;
-        } else {
-          throw new Error('Not a 2D array');
-        }
-      } catch (err) {
-        alert('Failed to parse map array. Make sure it is a valid 2D array, e.g., [[0,1],[2,0]]\n\nError: ' + err.message);
-      }
+        } else throw new Error('Not a 2D array');
+      } catch (err) { alert('Failed to parse tile array.\n' + err.message); }
     };
 
     document.getElementById('btnExport').onclick = () => {
       if (!mapData || !mapData.length) return;
-      
       let out = '[\n';
       for (let y = 0; y < mapH; y++) {
         out += '  [' + mapData[y].join(', ') + ']' + (y < mapH - 1 ? ',' : '') + '\n';
       }
       out += ']';
-      ioBox.value = out;
-      statusMsg.innerText = 'Array exported to text area. Ready to copy!';
+      document.getElementById('ioBox').value = out;
+      statusMsg.innerText = 'Tile Array exported!';
     };
 
+    // --- OBJECT BUTTONS (I/O) ---
+    function refreshObjectPalette() {
+      // Keep eraser
+      objPaletteDiv.innerHTML = `
+        <button class="color-btn ${selectedObjectType === 'ERASER' ? 'active' : ''}" id="eraserBtn">
+          <div class="swatch" style="background:#e74c3c;"></div> <span>🔴 Eraser (Delete)</span>
+        </button>
+      `;
+      document.getElementById('eraserBtn').onclick = () => {
+        selectedObjectType = 'ERASER';
+        refreshObjectPalette();
+      };
+
+      objectPaletteTypes.forEach((typeStr, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `color-btn ${selectedObjectType === typeStr ? 'active' : ''}`;
+        const shortName = typeStr.split("'")[1] || typeStr;
+        btn.innerHTML = `<div class="swatch" style="background:#3498db;"></div> <span>${shortName}</span>`;
+        btn.onclick = () => {
+          selectedObjectType = typeStr;
+          refreshObjectPalette();
+        };
+        objPaletteDiv.appendChild(btn);
+      });
+    }
+
+    document.getElementById('btnAddObjType').onclick = () => {
+      let typeStr = document.getElementById('newObjString').value.trim();
+      if (!typeStr) return;
+      if (!typeStr.includes('[')) {
+        // Assume they just pasted the name, auto wrap it default to MAP_01
+        typeStr = `MAP_01_OBJECTS['${typeStr}']`;
+      }
+      if (!objectPaletteTypes.includes(typeStr)) {
+        objectPaletteTypes.push(typeStr);
+      }
+      selectedObjectType = typeStr;
+      refreshObjectPalette();
+      document.getElementById('newObjString').value = '';
+    };
+
+    document.getElementById('btnLoadObj').onclick = () => {
+      try {
+        const text = document.getElementById('objIoBox').value.trim();
+        if (!text) return;
+        
+        // Parse with Proxies
+        const args = Object.keys(PARSER_GLOBALS);
+        const vals = Object.values(PARSER_GLOBALS);
+        const evaluator = new Function(...args, `return ${text};`);
+        const parsed = evaluator(...vals);
+        
+        if (Array.isArray(parsed)) {
+          objectsData = parsed;
+          
+          // Extract unique types to populate palette automatically
+          const uniqueTypes = new Set(objectsData.map(o => o.type));
+          let changed = false;
+          uniqueTypes.forEach(t => {
+            if (!objectPaletteTypes.includes(t)) {
+              objectPaletteTypes.push(t);
+              changed = true;
+            }
+          });
+          if (changed) refreshObjectPalette();
+
+          renderMap();
+          statusMsg.innerText = `Loaded ${objectsData.length} objects.`;
+        } else throw new Error("Expected an array of objects");
+      } catch (err) { alert('Failed to parse objects array.\n' + err.message); }
+    };
+
+    document.getElementById('btnExportObj').onclick = () => {
+      if (!objectsData) return;
+      let out = '[\n';
+      // Sort objects top-to-bottom for good measure
+      const sorted = [...objectsData].sort((a,b) => a.y - b.y || a.x - b.x);
+      
+      for (const obj of sorted) {
+        let str = '  { ';
+        for (const [k, v] of Object.entries(obj)) {
+          if (k === 'type') {
+            str += `type: ${v}, `;
+          } else if (typeof v === 'string' && (k === 'id' || k === 'hitMessage' || k === 'label')) {
+            str += `${k}: '${v.replace(/'/g, "\\'")}', `;
+          } else {
+            str += `${k}: ${v}, `;
+          }
+        }
+        str = str.slice(0, -2);
+        out += str + ' },\n';
+      }
+      out += ']';
+      document.getElementById('objIoBox').value = out;
+      statusMsg.innerText = 'Objects Array exported!';
+    };
+
+    // Zoom
     const zoomCtrl = document.getElementById('zoomCtrl');
     const zoomLabel = document.getElementById('zoomLabel');
     zoomCtrl.addEventListener('input', (e) => {
@@ -248,8 +452,7 @@
       renderMap();
     });
 
-    // Initial blank render
-    document.getElementById('btnCreateBlank').click();
+    init();
   </script>
 </body>
 </html>
