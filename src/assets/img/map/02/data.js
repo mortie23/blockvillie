@@ -123,8 +123,8 @@ export const MAP_02_OBJECTS = {
     id: 'play-equipment',
     map: 'playground',
     location: 'outside',
-    width: 3,
-    height: 2,
+    width: 5,
+    height: 4,
     src: playEquipment,
   },
   'rubiks-cube': {

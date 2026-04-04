@@ -65,7 +65,16 @@ function App() {
     Object.fromEntries(
       Object.values(MAPS).map(m => [
         m.id,
-        (m.obstacles || []).map(o => ({ ...o })), // deep-copy so we can mutate pos
+        (m.obstacles || []).filter(o => {
+          if (!o.type) {
+            console.error(`[MapData] Obstacle "${o.id}" on map "${m.id}" has undefined type. Check that the INTERACTIVE_OBJECTS key exists.`);
+            return false;
+          }
+          if (!o.type.src) {
+            console.warn(`[MapData] Obstacle "${o.id}" (${o.type.id}) on map "${m.id}" has no src image.`);
+          }
+          return true;
+        }).map(o => ({ ...o })), // deep-copy so we can mutate pos
       ])
     )
   );
@@ -89,6 +98,18 @@ function App() {
   // Current map data
   const mapData = MAPS[currentMapId];
 
+  // Dev-time: validate all map data on mount
+  useEffect(() => {
+    Object.values(MAPS).forEach(m => {
+      (m.objects || []).forEach((obj, i) => {
+        if (!obj.type) {
+          console.error(`[MapData] Static object #${i} on map "${m.id}" has undefined type. Check MAP_XX_OBJECTS key.`);
+        } else if (!obj.type.src) {
+          console.warn(`[MapData] Static object "${obj.type.id}" #${i} on map "${m.id}" has no src image.`);
+        }
+      });
+    });
+  }, []);
   // Show splash on initial load
   useEffect(() => {
     if (mapData.mission && !completedMissions[currentMapId]) {
@@ -112,7 +133,7 @@ function App() {
 
     // Collision check
     const tileType = mapData.data[y][x];
-    if (![0, 3, 4, 5, 6, 8].includes(tileType)) return;
+    if (![0, 3, 4, 5, 6, 8, 9].includes(tileType)) return;
 
     // Static Object Collision
     const isStaticObject = (mapData.objects || []).some(obj => {
@@ -180,28 +201,6 @@ function App() {
       if (interactiveAtTarget.type.canOpenAndClose) {
         const isCurrentlyOpen = !!interactiveAtTarget.isOpen;
 
-        // If open and uncollected items inside
-        if (isCurrentlyOpen && interactiveAtTarget.type.containsItem && !interactiveAtTarget.hasCollectedItem) {
-          const itemConfig = INTERACTIVE_OBJECTS[interactiveAtTarget.type.containsItem];
-          if (itemConfig) {
-            setPossessions(prev => {
-              if (prev.some(p => p.id === itemConfig.id)) return prev;
-              return [...prev, itemConfig];
-            });
-            const toastId = `toast-${Date.now()}`;
-            setToasts(prev => [...prev, { id: toastId, message: `Found ${itemConfig.label} inside!` }]);
-            setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
-
-            setActiveObstacles(prev => {
-              const obsList = [...prev[currentMapId]];
-              const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
-              obsList[idx] = { ...obsList[idx], hasCollectedItem: true };
-              return { ...prev, [currentMapId]: obsList };
-            });
-            return;
-          }
-        }
-
         // Toggle condition
         const reqItem = interactiveAtTarget.type.requiresItem;
         const currentPossessions = possessionsRef.current;
@@ -214,15 +213,64 @@ function App() {
           return;
         }
 
-        setActiveObstacles(prev => {
-          const obsList = [...prev[currentMapId]];
-          const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
-          obsList[idx] = { ...obsList[idx], isOpen: !isCurrentlyOpen };
-          return { ...prev, [currentMapId]: obsList };
-        });
-        const toastId = `toast-${Date.now()}`;
-        setToasts(prev => [...prev, { id: toastId, message: `${isCurrentlyOpen ? 'Closed' : 'Opened'} ${interactiveAtTarget.type.label}` }]);
-        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+        if (!isCurrentlyOpen) {
+          // Opening: spawn contained item on an adjacent tile
+          setActiveObstacles(prev => {
+            const obsList = [...prev[currentMapId]];
+            const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
+            obsList[idx] = { ...obsList[idx], isOpen: true };
+
+            // Spawn the contained item next to the chest
+            if (interactiveAtTarget.type.containsItem && !interactiveAtTarget.hasSpawnedItem) {
+              const itemConfig = INTERACTIVE_OBJECTS[interactiveAtTarget.type.containsItem];
+              if (itemConfig) {
+                // Find an adjacent walkable tile that isn't occupied
+                const adjacents = [
+                  { x: interactiveAtTarget.x + 1, y: interactiveAtTarget.y },
+                  { x: interactiveAtTarget.x - 1, y: interactiveAtTarget.y },
+                  { x: interactiveAtTarget.x, y: interactiveAtTarget.y + 1 },
+                  { x: interactiveAtTarget.x, y: interactiveAtTarget.y - 1 },
+                ];
+                const spawnTile = adjacents.find(t =>
+                  isCellWalkable(mapData, t.x, t.y) &&
+                  !obsList.some(o => o.x === t.x && o.y === t.y)
+                );
+                if (spawnTile) {
+                  const newObs = {
+                    id: `${interactiveAtTarget.id}-item-${Date.now()}`,
+                    type: itemConfig,
+                    x: spawnTile.x,
+                    y: spawnTile.y,
+                    dir: 1,
+                  };
+                  obsList.push(newObs);
+                  obsList[idx] = { ...obsList[idx], hasSpawnedItem: true };
+
+                  const toastId = `toast-${Date.now()}`;
+                  setToasts(prev => [...prev, { id: toastId, message: `A ${itemConfig.label} appeared from the chest!` }]);
+                  setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+                }
+              }
+            }
+
+            return { ...prev, [currentMapId]: obsList };
+          });
+
+          const toastId = `toast-${Date.now()}`;
+          setToasts(prev => [...prev, { id: toastId, message: `Opened ${interactiveAtTarget.type.label}` }]);
+          setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+        } else {
+          // Closing
+          setActiveObstacles(prev => {
+            const obsList = [...prev[currentMapId]];
+            const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
+            obsList[idx] = { ...obsList[idx], isOpen: false };
+            return { ...prev, [currentMapId]: obsList };
+          });
+          const toastId = `toast-${Date.now()}`;
+          setToasts(prev => [...prev, { id: toastId, message: `Closed ${interactiveAtTarget.type.label}` }]);
+          setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+        }
         return; // Block movement
       }
     }
@@ -260,7 +308,7 @@ function App() {
   const isCellWalkable = useCallback((mapDef, nx, ny) => {
     if (ny < 0 || ny >= mapDef.height || nx < 0 || nx >= mapDef.width) return false;
     const tile = mapDef.data[ny][nx];
-    if (![0, 3, 4, 5, 6, 8].includes(tile)) return false;
+    if (![0, 3, 4, 5, 6, 8, 9].includes(tile)) return false;
     const blocked = (mapDef.objects || []).some(obj => {
       const w = obj.type.width || 1;
       const h = obj.type.height || 1;
@@ -291,20 +339,52 @@ function App() {
           tickCounters[obs.id] = 0;
 
           // Compute candidate next position
-          let nx = obs.x + (obs.type.axis === 'x' ? obs.dir : 0);
-          let ny = obs.y + (obs.type.axis === 'y' ? obs.dir : 0);
-          let newDir = obs.dir;
+          let nx, ny, newDir;
 
-          if (!isCellWalkable(mapDef, nx, ny)) {
-            // Bounce — try reverse
-            newDir = -obs.dir;
-            nx = obs.x + (obs.type.axis === 'x' ? newDir : 0);
-            ny = obs.y + (obs.type.axis === 'y' ? newDir : 0);
-            // If still not walkable, stay put
-            if (!isCellWalkable(mapDef, nx, ny)) {
+          if (obs.type.axis === 'random') {
+            // Random walk: pick a random direction each step
+            const directions = [
+              { dx: 1, dy: 0 },   // right
+              { dx: -1, dy: 0 },  // left
+              { dx: 0, dy: 1 },   // down
+              { dx: 0, dy: -1 },  // up
+            ];
+            // Shuffle and try each direction until one is walkable
+            const shuffled = directions.sort(() => Math.random() - 0.5);
+            let moved = false;
+            for (const d of shuffled) {
+              const cx = obs.x + d.dx;
+              const cy = obs.y + d.dy;
+              if (isCellWalkable(mapDef, cx, cy)) {
+                nx = cx;
+                ny = cy;
+                newDir = d.dx !== 0 ? d.dx : obs.dir;
+                moved = true;
+                break;
+              }
+            }
+            if (!moved) {
               nx = obs.x;
               ny = obs.y;
               newDir = obs.dir;
+            }
+          } else {
+            // Standard patrol: x or y axis
+            nx = obs.x + (obs.type.axis === 'x' ? obs.dir : 0);
+            ny = obs.y + (obs.type.axis === 'y' ? obs.dir : 0);
+            newDir = obs.dir;
+
+            if (!isCellWalkable(mapDef, nx, ny)) {
+              // Bounce — try reverse
+              newDir = -obs.dir;
+              nx = obs.x + (obs.type.axis === 'x' ? newDir : 0);
+              ny = obs.y + (obs.type.axis === 'y' ? newDir : 0);
+              // If still not walkable, stay put
+              if (!isCellWalkable(mapDef, nx, ny)) {
+                nx = obs.x;
+                ny = obs.y;
+                newDir = obs.dir;
+              }
             }
           }
 
@@ -504,7 +584,7 @@ function App() {
             {diamonds}
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="top-bar-buttons hide-scrollbar">
             <button className="button secondary" onClick={() => setActiveModal('map')}>
               <MapIcon size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Map
             </button>
@@ -607,7 +687,7 @@ function App() {
           .map(obs => (
           <img
             key={obs.id}
-            src={obs.turnedOver && obs.type.turnedSrc ? obs.type.turnedSrc : obs.type.src}
+            src={obs.isOpen && obs.type.openSrc ? obs.type.openSrc : (obs.turnedOver && obs.type.turnedSrc ? obs.type.turnedSrc : obs.type.src)}
             alt={obs.type.label}
             className={`obstacle-sprite${glowingObstacles.has(obs.id) ? ' glowing' : ''}${obs.type.canCollect && (!obs.type.canTurnOver || obs.turnedOver) ? ' floating-collectable' : ''}${obs.turnedOver ? (obs.type.turnedSrc ? ' revealed' : ' turned-over') : ''}${obs.isOpen ? ' opened' : ''}`}
             style={{
@@ -842,7 +922,12 @@ function App() {
             <h2 style={{ color: '#ffb703', fontSize: '2rem', textAlign: 'center' }}>Mission Complete!</h2>
             <p style={{ color: '#555', textAlign: 'center' }}>You've successfully completed the area mission!</p>
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-              <button className="button" style={{ background: '#4ecdc4', fontSize: '1.1rem', padding: '14px 30px' }} onClick={() => setActiveModal(null)}>
+              <button className="button" style={{ background: '#4ecdc4', fontSize: '1.1rem', padding: '14px 30px' }} onClick={() => {
+                setActiveModal(null);
+                if (mapData.mission && mapData.mission.next_map) {
+                  changeMap(mapData.mission.next_map);
+                }
+              }}>
                 Awesome!
               </button>
             </div>

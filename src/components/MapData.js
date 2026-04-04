@@ -17,7 +17,7 @@ import { INTERACTIVE_OBJECTS } from '../assets/img/interactive/data';
 export const MAPS = {
   suburban_house: {
     id: "suburban_house",
-    name: "Mortimer House",
+    name: "Lyon House",
     width: 32,
     height: 24,
     data: [
@@ -58,7 +58,8 @@ export const MAPS = {
       description: 'Get ready for school! Find your bag, grab the keys, wear your uniform, and head to out to the car on the driveway.',
       outfit: 'school-uniform',
       items: ['school-bag', 'key'],
-      target: { x: 11, y: 20, width: 4, height: 4 }
+      target: { x: 11, y: 20, width: 4, height: 4 },
+      next_map: 'school'
     },
     objects: [
       /* front trees */
@@ -143,7 +144,7 @@ export const MAPS = {
       [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 0, 0, 1, 3, 3, 3, 3, 1, 3, 3, 3, 3, 1, 3, 3, 3, 3, 1, 1, 3, 3, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 3, 3, 3, 3, 3, 3, 1, 4, 4, 1, 3, 3, 3, 3, 3, 1, 4, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
       [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 0, 0, 0, 1, 3, 3, 3, 3, 1, 1, 3, 3, 1, 1, 1, 3, 3, 1, 1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 3, 3, 3, 3, 3, 3, 1, 4, 4, 3, 3, 3, 3, 3, 3, 1, 4, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
       [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 0, 0, 0, 1, 3, 3, 3, 3, 1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 3, 3, 3, 3, 3, 3, 1, 4, 4, 3, 3, 3, 3, 3, 3, 1, 4, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
-      [6, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 0, 0, 0, 0, 1, 1, 3, 3, 1, 1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 3, 3, 1, 1, 1, 1, 4, 4, 1, 1, 1, 1, 1, 1, 1, 4, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+      [6, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 0, 0, 0, 0, 1, 1, 3, 3, 1, 1, 4, 9, 4, 9, 4, 9, 4, 9, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 3, 3, 1, 1, 1, 1, 4, 4, 1, 1, 1, 1, 1, 1, 1, 4, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
       [6, 3, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 4, 4, 4, 6, 6, 6, 6, 6, 7, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
       [6, 6, 3, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 4, 4, 4, 6, 6, 6, 6, 6, 7, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
       [6, 6, 6, 3, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 4, 4, 6, 6, 6, 6, 6, 6, 7, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
@@ -281,6 +282,11 @@ export const MAPS = {
       { id: 'chess-white-knight-3', type: INTERACTIVE_OBJECTS['chess-white-knight'], x: 31, y: 82, dir: 1 },
       { id: 'chess-white-pawn-2', type: INTERACTIVE_OBJECTS['chess-white-pawn'], x: 33, y: 82, dir: 1 },
       { id: 'chess-black-king-3', type: INTERACTIVE_OBJECTS['chess-black-king'], x: 32, y: 82, dir: 1 },
+      { id: 'teacher-1', type: INTERACTIVE_OBJECTS['teacher'], x: 70, y: 9, dir: 1 },
+      { id: 'teacher-2', type: INTERACTIVE_OBJECTS['teacher'], x: 75, y: 30, dir: 1 },
+      { id: 'teacher-3', type: INTERACTIVE_OBJECTS['teacher'], x: 55, y: 50, dir: 1 },
+      { id: 'teacher-4', type: INTERACTIVE_OBJECTS['teacher'], x: 65, y: 78, dir: 1 },
+      { id: 'teacher-5', type: INTERACTIVE_OBJECTS['teacher'], x: 40, y: 95, dir: 1 },
     ],
     mission: {
       description: 'Find the secret Uno game happening during recess! Flip all the cards to reveal them and collect them.',
@@ -289,7 +295,6 @@ export const MAPS = {
       target: { x: 74, y: 50, width: 4, height: 4 }
     },
     objects: [
-      { type: MAP_02_OBJECTS['play-equipment'], x: 1, y: 4 },
       { type: MAP_01_OBJECTS['school-chair'], x: 70, y: 5 },
       { type: MAP_01_OBJECTS['school-chair'], x: 71, y: 5 },
       { type: MAP_01_OBJECTS['school-chair'], x: 76, y: 5 },
@@ -317,7 +322,6 @@ export const MAPS = {
       { type: MAP_02_OBJECTS['playground-bush'], x: 84, y: 9 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 86, y: 9 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 87, y: 9 },
-      { type: MAP_02_OBJECTS['laptop'], x: 1, y: 10 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 32, y: 10 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 34, y: 10 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 38, y: 10 },
@@ -345,7 +349,6 @@ export const MAPS = {
       { type: MAP_02_OBJECTS['playground-bush'], x: 37, y: 14 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 38, y: 14 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 40, y: 14 },
-      { type: MAP_02_OBJECTS['barbie-doll'], x: 1, y: 15 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 36, y: 15 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 38, y: 15 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 40, y: 15 },

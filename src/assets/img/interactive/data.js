@@ -10,6 +10,7 @@ import phone from '../map/02/phone.png';
 import rubiksCube from '../map/02/rubiks-cube.png';
 import violin from '../map/02/violin.png';
 import treasureChest from '../map/02/treasure-chest.png';
+import treasureChestOpen from '../map/02/treasure-chest-open.png';
 import treasureChestKey from '../map/02/treasure-chest-key.png';
 import basketBall from '../map/02/basket-ball.png';
 import aflBall from '../map/02/afl-ball.png';
@@ -18,6 +19,11 @@ import chessWhiteQueen from '../map/02/chess-white-queen.png';
 import chessWhiteKnight from '../map/02/chess-white-knight.png';
 import chessWhitePawn from '../map/02/chess-white-pawn.png';
 import chessBlackKing from '../map/02/chess-black-king.png';
+import teacher from '../map/02/teacher.png';
+import recorder from '../map/02/recorder.png';
+import pencil from '../map/02/pencil.png';
+import sharpener from '../map/02/sharpener.png';
+import notebook from '../map/02/notebook.png';
 
 export const INTERACTIVE_OBJECTS = {
   'cat': {
@@ -83,6 +89,7 @@ export const INTERACTIVE_OBJECTS = {
     width: 1,
     height: 1,
     src: treasureChest,
+    openSrc: treasureChestOpen,
     speed: 0,
     damage: 0,
     canOpenAndClose: true,
@@ -213,5 +220,51 @@ export const INTERACTIVE_OBJECTS = {
     id: 'chess-black-king',
     label: 'Black King',
     width: 1, height: 1, src: chessBlackKing, speed: 0, damage: 0, canPush: true,
+  },
+  'teacher': {
+    id: 'teacher',
+    label: 'Teacher',
+    width: 1, height: 1,
+    src: teacher,
+    speed: 1.2,
+    damage: 1,
+    axis: 'random',
+    hitMessage: 'You bumped into a teacher! 📚',
+  },
+  'recorder': {
+    id: 'recorder',
+    label: 'Recorder',
+    width: 1, height: 1,
+    src: recorder,
+    speed: 0, damage: 0,
+    canCollect: true,
+    hitMessage: 'Picked up a Recorder! 🎵',
+  },
+  'pencil': {
+    id: 'pencil',
+    label: 'Pencil',
+    width: 1, height: 1,
+    src: pencil,
+    speed: 0, damage: 0,
+    canCollect: true,
+    hitMessage: 'Picked up a Pencil! ✏️',
+  },
+  'sharpener': {
+    id: 'sharpener',
+    label: 'Sharpener',
+    width: 1, height: 1,
+    src: sharpener,
+    speed: 0, damage: 0,
+    canCollect: true,
+    hitMessage: 'Picked up a Sharpener!',
+  },
+  'notebook': {
+    id: 'notebook',
+    label: 'Notebook',
+    width: 1, height: 1,
+    src: notebook,
+    speed: 0, damage: 0,
+    canCollect: true,
+    hitMessage: 'Picked up a Notebook! 📓',
   },
 };

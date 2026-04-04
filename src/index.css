@@ -77,9 +77,9 @@ body {
   justify-content: center;
   align-items: center;
   position: relative;
-  background: #a8e6cf;
+  background: #3a3a3a;
   /* Base ground color */
-  background-image: radial-gradient(#8bceb5 10%, transparent 10%);
+  background-image: radial-gradient(#222 10%, transparent 10%);
   background-size: 40px 40px;
 }
 
@@ -237,6 +237,12 @@ body {
   background-size: 20px 20px;
 }
 
+/* Walkable Blue Dot */
+.tile-9 {
+  background-color: #c8956c;
+  background-image: radial-gradient(circle at center, #2e86ed 40%, transparent 42%);
+}
+
 /* Player */
 .player {
   position: absolute;
@@ -371,6 +377,27 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.top-bar-buttons {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  align-items: center;
+  padding-bottom: 5px;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .diamond-counter {
