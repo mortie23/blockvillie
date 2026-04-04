@@ -547,8 +547,23 @@ body {
   object-fit: contain;
   z-index: 8;
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.25));
-  transition: left 0.45s linear, top 0.45s linear, filter 0.2s;
+  transition: left 0.45s linear, top 0.45s linear, filter 0.2s, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   image-rendering: auto;
+}
+
+.obstacle-sprite.turned-over {
+  transform: rotateY(180deg) scale(0.9);
+  filter: brightness(0.8) grayscale(0.5);
+}
+
+.obstacle-sprite.revealed {
+  transform: scale(1.1) translateY(-2px);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.obstacle-sprite.opened {
+  transform: scale(1.1) translateY(-5px);
+  filter: brightness(1.3) drop-shadow(0 0 15px rgba(255, 230, 109, 0.8));
 }
 
 @keyframes obstacle-glow {

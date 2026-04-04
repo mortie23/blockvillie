@@ -3,6 +3,7 @@ import { Diamond, X, Map as MapIcon, ShoppingBag, Users, ArrowUp, ArrowDown, Arr
 import { MAPS } from './components/MapData';
 import { CHARACTERS } from './components/Characters';
 import { OUTFITS } from './assets/img/outfit/data.js';
+import { INTERACTIVE_OBJECTS } from './assets/img/interactive/data.js';
 
 const TILE_SIZE = 80;
 
@@ -122,9 +123,113 @@ function App() {
     });
     if (isStaticObject) return;
 
+    // Interactive Object Collision Check
+    const activeObs = activeObstaclesRef.current[currentMapId] || [];
+    const interactiveAtTarget = activeObs.find(obs => obs.x === x && obs.y === y);
+
+    if (interactiveAtTarget) {
+      if (interactiveAtTarget.type.canPush) {
+        const dx = x - playerPos.x;
+        const dy = y - playerPos.y;
+        const targetX = x + dx;
+        const targetY = y + dy;
+
+        // Check if targetX, targetY is Walkable and Empty
+        if (targetY >= 0 && targetY < mapData.height && targetX >= 0 && targetX < mapData.width) {
+          const tTileType = mapData.data[targetY][targetX];
+          if ([0, 3, 4, 5, 6, 8].includes(tTileType)) {
+            const isTargetStaticObj = (mapData.objects || []).some(obj => {
+              const w = obj.type.width || 1;
+              const h = obj.type.height || 1;
+              return targetX >= obj.x && targetX < obj.x + w && targetY >= obj.y && targetY < obj.y + h;
+            });
+            const isTargetInteractiveObj = activeObs.some(o => o.x === targetX && o.y === targetY);
+            
+            if (!isTargetStaticObj && !isTargetInteractiveObj) {
+              setActiveObstacles(prev => {
+                const obsList = [...prev[currentMapId]];
+                const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
+                obsList[idx] = { ...obsList[idx], x: targetX, y: targetY };
+                return { ...prev, [currentMapId]: obsList };
+              });
+              setPlayerPos({ x, y });
+            }
+          }
+        }
+        return; // Block movement if push fails, or pushed successfully
+      }
+
+      if (interactiveAtTarget.type.canTurnOver) {
+        if (!interactiveAtTarget.turnedOver) {
+          setActiveObstacles(prev => {
+            const obsList = [...prev[currentMapId]];
+            const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
+            obsList[idx] = { ...obsList[idx], turnedOver: true };
+            return { ...prev, [currentMapId]: obsList };
+          });
+          const toastId = `toast-${Date.now()}`;
+          setToasts(prev => [...prev, { id: toastId, message: `Turned over ${interactiveAtTarget.type.label}` }]);
+          setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+          return; // Block movement because we just flipped it
+        } else if (!interactiveAtTarget.type.canCollect) {
+          return; // Block movement if it's not collectable
+        }
+        // Let player walk onto it if already flipped and collectable
+      }
+
+      if (interactiveAtTarget.type.canOpenAndClose) {
+        const isCurrentlyOpen = !!interactiveAtTarget.isOpen;
+
+        // If open and uncollected items inside
+        if (isCurrentlyOpen && interactiveAtTarget.type.containsItem && !interactiveAtTarget.hasCollectedItem) {
+          const itemConfig = INTERACTIVE_OBJECTS[interactiveAtTarget.type.containsItem];
+          if (itemConfig) {
+            setPossessions(prev => {
+              if (prev.some(p => p.id === itemConfig.id)) return prev;
+              return [...prev, itemConfig];
+            });
+            const toastId = `toast-${Date.now()}`;
+            setToasts(prev => [...prev, { id: toastId, message: `Found ${itemConfig.label} inside!` }]);
+            setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+
+            setActiveObstacles(prev => {
+              const obsList = [...prev[currentMapId]];
+              const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
+              obsList[idx] = { ...obsList[idx], hasCollectedItem: true };
+              return { ...prev, [currentMapId]: obsList };
+            });
+            return;
+          }
+        }
+
+        // Toggle condition
+        const reqItem = interactiveAtTarget.type.requiresItem;
+        const currentPossessions = possessionsRef.current;
+        const hasReqItem = !reqItem || currentPossessions.some(p => p.id === reqItem);
+
+        if (!isCurrentlyOpen && reqItem && !hasReqItem) {
+          const toastId = `toast-${Date.now()}`;
+          setToasts(prev => [...prev, { id: toastId, message: `Requires ${reqItem} to open!` }]);
+          setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+          return;
+        }
+
+        setActiveObstacles(prev => {
+          const obsList = [...prev[currentMapId]];
+          const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
+          obsList[idx] = { ...obsList[idx], isOpen: !isCurrentlyOpen };
+          return { ...prev, [currentMapId]: obsList };
+        });
+        const toastId = `toast-${Date.now()}`;
+        setToasts(prev => [...prev, { id: toastId, message: `${isCurrentlyOpen ? 'Closed' : 'Opened'} ${interactiveAtTarget.type.label}` }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+        return; // Block movement
+      }
+    }
+
     // Move player
     setPlayerPos({ x, y });
-  }, [playerPos, mapData, activeModal]);
+  }, [playerPos, mapData, activeModal, currentMapId]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -135,6 +240,12 @@ function App() {
   // We keep refs for values we need inside the interval without re-creating it.
   const playerPosRef = React.useRef(playerPos);
   useEffect(() => { playerPosRef.current = playerPos; }, [playerPos]);
+
+  const activeObstaclesRef = React.useRef(activeObstacles);
+  useEffect(() => { activeObstaclesRef.current = activeObstacles; }, [activeObstacles]);
+
+  const possessionsRef = React.useRef(possessions);
+  useEffect(() => { possessionsRef.current = possessions; }, [possessions]);
 
   const healthRef = React.useRef(health);
   useEffect(() => { healthRef.current = health; }, [health]);
@@ -496,9 +607,9 @@ function App() {
           .map(obs => (
           <img
             key={obs.id}
-            src={obs.type.src}
+            src={obs.turnedOver && obs.type.turnedSrc ? obs.type.turnedSrc : obs.type.src}
             alt={obs.type.label}
-            className={`obstacle-sprite${glowingObstacles.has(obs.id) ? ' glowing' : ''}${obs.type.canCollect ? ' floating-collectable' : ''}`}
+            className={`obstacle-sprite${glowingObstacles.has(obs.id) ? ' glowing' : ''}${obs.type.canCollect && (!obs.type.canTurnOver || obs.turnedOver) ? ' floating-collectable' : ''}${obs.turnedOver ? (obs.type.turnedSrc ? ' revealed' : ' turned-over') : ''}${obs.isOpen ? ' opened' : ''}`}
             style={{
               left: obs.x * TILE_SIZE,
               top: obs.y * TILE_SIZE,

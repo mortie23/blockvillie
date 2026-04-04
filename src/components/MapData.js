@@ -230,17 +230,20 @@ export const MAPS = {
       [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 7, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 7, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     ],
-    startX: 14, // Starting somewhere
-    startY: 16,
+    startX: 20, // Starting somewhere
+    startY: 46,
     diamonds: MAP_02_DIAMONDS,
     obstacles: [
-      { id: 'school-bag-1', type: INTERACTIVE_OBJECTS['school-bag'], x: 16, y: 16, dir: 1 },
+      { id: 'uno-card-1', type: INTERACTIVE_OBJECTS['uno-green-3'], x: 80, y: 51, dir: 1 },
+      { id: 'uno-card-2', type: INTERACTIVE_OBJECTS['uno-red-6'], x: 81, y: 51, dir: 1 },
+      { id: 'uno-card-3', type: INTERACTIVE_OBJECTS['uno-red-6'], x: 80, y: 52, dir: 1 },
+      { id: 'uno-card-4', type: INTERACTIVE_OBJECTS['uno-draw-4'], x: 81, y: 52, dir: 1 },
     ],
     mission: {
-      description: 'It will be a massive day at school',
+      description: 'Find the secret Uno game happening during recess! Flip all the cards to reveal them and collect them.',
       outfit: 'school-uniform',
-      items: ['school-bag'],
-      target: { x: 11, y: 20, width: 4, height: 4 }
+      items: ['uno-green-3', 'uno-red-6', 'uno-draw-4'],
+      target: { x: 74, y: 50, width: 4, height: 4 }
     },
     objects: [
       { type: MAP_01_OBJECTS['school-chair'], x: 70, y: 5 },

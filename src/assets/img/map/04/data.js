@@ -9,6 +9,8 @@ import suv from './suv.png';
 import kitchenSink from './kitchen-sink.png';
 import toilet from './toilet.png';
 import shower from './shower.png';
+import trampoline from './trampoline.png';
+import desk from './desk.png';
 
 export const MAP_04_OBJECTS = {
   'circle-dining-table-chairs': {
@@ -98,6 +100,22 @@ export const MAP_04_OBJECTS = {
     width: 1,
     height: 1,
     src: shower,
+  },
+  'trampoline': {
+    id: 'trampoline',
+    map: 'suburban_house',
+    location: 'outside',
+    width: 2,
+    height: 2,
+    src: trampoline,
+  },
+  'desk': {
+    id: 'desk',
+    map: 'suburban_house',
+    location: 'inside',
+    width: 2,
+    height: 1,
+    src: desk,
   }
 };
 
