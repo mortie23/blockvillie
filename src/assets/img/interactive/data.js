@@ -5,6 +5,19 @@ import unoBack from '../map/02/uno-back.png';
 import unoGreen3 from '../map/02/uno-green-3.png';
 import unoRed6 from '../map/02/uno-red-6.png';
 import unoDraw4 from '../map/02/uno-draw-4.png';
+import chewingGum from '../map/02/chewing-gum.png';
+import phone from '../map/02/phone.png';
+import rubiksCube from '../map/02/rubiks-cube.png';
+import violin from '../map/02/violin.png';
+import treasureChest from '../map/02/treasure-chest.png';
+import treasureChestKey from '../map/02/treasure-chest-key.png';
+import basketBall from '../map/02/basket-ball.png';
+import aflBall from '../map/02/afl-ball.png';
+import chessWhiteKing from '../map/02/chess-white-king.png';
+import chessWhiteQueen from '../map/02/chess-white-queen.png';
+import chessWhiteKnight from '../map/02/chess-white-knight.png';
+import chessWhitePawn from '../map/02/chess-white-pawn.png';
+import chessBlackKing from '../map/02/chess-black-king.png';
 
 export const INTERACTIVE_OBJECTS = {
   'cat': {
@@ -66,15 +79,15 @@ export const INTERACTIVE_OBJECTS = {
   },
   'chest': {
     id: 'chest',
-    label: 'Chest',
+    label: 'Treasure Chest',
     width: 1,
     height: 1,
-    src: null, // TODO: Replace with import once image is added
+    src: treasureChest,
     speed: 0,
     damage: 0,
     canOpenAndClose: true,
-    requiresItem: 'key',
-    containsItem: 'school-bag',
+    requiresItem: 'treasure-chest-key',
+    containsItem: 'rubiks-cube',
   },
   'uno-green-3': {
     id: 'uno-green-3',
@@ -114,5 +127,91 @@ export const INTERACTIVE_OBJECTS = {
     canTurnOver: true,
     canCollect: true,
     hitMessage: 'Picked up a Draw 4 card!',
+  },
+  'chewing-gum': {
+    id: 'chewing-gum',
+    label: 'Chewing Gum',
+    width: 1, height: 1,
+    src: chewingGum,
+    speed: 0, damage: 0,
+    canCollect: true,
+    hitMessage: 'Yuck, old chewing gum!',
+  },
+  'phone': {
+    id: 'phone',
+    label: 'Phone',
+    width: 1, height: 1,
+    src: phone,
+    speed: 0, damage: 0,
+    canCollect: true,
+    hitMessage: 'Picked up a phone!',
+  },
+  'rubiks-cube': {
+    id: 'rubiks-cube',
+    label: 'Rubik\'s Cube',
+    width: 1, height: 1,
+    src: rubiksCube,
+    speed: 0, damage: 0,
+    canCollect: true,
+    hitMessage: 'Picked up a Rubik\'s Cube!',
+  },
+  'violin': {
+    id: 'violin',
+    label: 'Violin',
+    width: 1, height: 1,
+    src: violin,
+    speed: 0, damage: 0,
+    canCollect: true,
+    hitMessage: 'Picked up a Violin! 🎻',
+  },
+  'treasure-chest-key': {
+    id: 'treasure-chest-key',
+    label: 'Treasure Key',
+    width: 1, height: 1,
+    src: treasureChestKey,
+    speed: 0, damage: 0,
+    canCollect: true,
+    hitMessage: 'Picked up a Treasure Key!',
+  },
+  'basket-ball': {
+    id: 'basket-ball',
+    label: 'Basketball',
+    width: 1, height: 1,
+    src: basketBall,
+    speed: 0, damage: 0,
+    canPush: true,
+  },
+  'afl-ball': {
+    id: 'afl-ball',
+    label: 'AFL Ball',
+    width: 1, height: 1,
+    src: aflBall,
+    speed: 0, damage: 0,
+    canPush: true,
+  },
+  'chess-white-king': {
+    id: 'chess-white-king',
+    label: 'White King',
+    width: 1, height: 1, src: chessWhiteKing, speed: 0, damage: 0, canPush: true,
+  },
+  'chess-white-queen': {
+    id: 'chess-white-queen',
+    label: 'White Queen',
+    width: 1, height: 1, src: chessWhiteQueen, speed: 0, damage: 0, canPush: true,
+  },
+  'chess-white-knight': {
+    id: 'chess-white-knight',
+    label: 'White Knight',
+    width: 1, height: 1, src: chessWhiteKnight, speed: 0, damage: 0, canPush: true,
+  },
+  'chess-white-pawn': {
+    id: 'chess-white-pawn',
+    label: 'White Pawn',
+    width: 1, height: 1, src: chessWhitePawn, speed: 0, damage: 0, canPush: true,
+  },
+  'chess-black-king': {
+    id: 'chess-black-king',
+    label: 'Black King',
+    width: 1, height: 1, src: chessBlackKing, speed: 0, damage: 0, canPush: true,
   },
 };
