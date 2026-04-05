@@ -24,6 +24,8 @@ import recorder from '../map/02/recorder.png';
 import pencil from '../map/02/pencil.png';
 import sharpener from '../map/02/sharpener.png';
 import notebook from '../map/02/notebook.png';
+import lostProperty from '../map/02/lost-property.png';
+import lostPropertyOpen from '../map/02/lost-property-open.png';
 
 export const INTERACTIVE_OBJECTS = {
   'cat': {
@@ -95,6 +97,22 @@ export const INTERACTIVE_OBJECTS = {
     canOpenAndClose: true,
     requiresItem: 'treasure-chest-key',
     containsItem: 'rubiks-cube',
+  },
+  'lost-property': {
+    id: 'lost-property',
+    label: 'Lost Property',
+    width: 2,
+    height: 2,
+    src: lostProperty,
+    openSrc: lostPropertyOpen,
+    speed: 0,
+    damage: 0,
+    canOpenAndClose: true,
+    requiresItem: false,
+    containsItems: [
+      { id: 'notebook', type: 'interactive' },
+      { id: 'school-sport-uniform', type: 'outfit' },
+    ],
   },
   'uno-green-3': {
     id: 'uno-green-3',

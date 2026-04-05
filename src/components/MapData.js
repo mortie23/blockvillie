@@ -62,15 +62,6 @@ export const MAPS = {
       next_map: 'school'
     },
     objects: [
-      /* front trees */
-      { type: MAP_02_OBJECTS['playground-bush'], x: 15, y: 18 },
-      { type: MAP_02_OBJECTS['playground-bush'], x: 18, y: 18 },
-      { type: MAP_02_OBJECTS['playground-bush'], x: 21, y: 18 },
-      /* back exit bushes */
-      { type: MAP_02_OBJECTS['playground-bush'], x: 14, y: 2 },
-      { type: MAP_02_OBJECTS['playground-bush'], x: 15, y: 3 },
-      { type: MAP_02_OBJECTS['playground-bush'], x: 15, y: 4 },
-      /* back hedge */
       { type: MAP_02_OBJECTS['playground-bush'], x: 25, y: 0 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 26, y: 0 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 27, y: 0 },
@@ -78,40 +69,39 @@ export const MAPS = {
       { type: MAP_02_OBJECTS['playground-bush'], x: 29, y: 0 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 30, y: 0 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 31, y: 0 },
-      /* bushed near garage */
+      { type: MAP_04_OBJECTS['trampoline'], x: 1, y: 2 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 6, y: 2 },
+      { type: MAP_02_OBJECTS['playground-bush'], x: 14, y: 2 },
+      { type: MAP_02_OBJECTS['playground-bush'], x: 5, y: 3 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 7, y: 3 },
+      { type: MAP_02_OBJECTS['playground-bush'], x: 15, y: 3 },
+      { type: MAP_04_OBJECTS['bookcase'], x: 19, y: 3 },
+      { type: MAP_04_OBJECTS['three-seater-couch'], x: 21, y: 3 },
+      { type: MAP_02_OBJECTS['playground-bush'], x: 4, y: 4 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 8, y: 4 },
+      { type: MAP_02_OBJECTS['playground-bush'], x: 15, y: 4 },
+      { type: MAP_02_OBJECTS['playground-bush'], x: 5, y: 5 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 7, y: 5 },
       { type: MAP_02_OBJECTS['playground-bush'], x: 6, y: 6 },
-      { type: MAP_02_OBJECTS['playground-bush'], x: 5, y: 5 },
-      { type: MAP_02_OBJECTS['playground-bush'], x: 4, y: 4 },
-      { type: MAP_02_OBJECTS['playground-bush'], x: 5, y: 3 },
-      /* family room */
-      { type: MAP_04_OBJECTS['circle-dining-table-chairs'], x: 21, y: 9 },
-      /* sunroom */
-      { type: MAP_04_OBJECTS['three-seater-couch'], x: 21, y: 3 },
-      { type: MAP_04_OBJECTS['bookcase'], x: 19, y: 3 },
-      /* table */
+      { type: MAP_03_OBJECTS['shops-bin'], x: 8, y: 7 },
+      { type: MAP_03_OBJECTS['shops-bin'], x: 8, y: 8 },
+      { type: MAP_04_OBJECTS['shower'], x: 11, y: 8 },
+      { type: MAP_04_OBJECTS['shower'], x: 13, y: 8 },
+      { type: MAP_04_OBJECTS['toilet'], x: 16, y: 8 },
+      { type: MAP_04_OBJECTS['kitchen-sink'], x: 24, y: 8 },
       { type: MAP_04_OBJECTS['eight-seater-dining-chairs'], x: 28, y: 8 },
-      /* girls beds */
+      { type: MAP_04_OBJECTS['circle-dining-table-chairs'], x: 21, y: 9 },
+      { type: MAP_03_OBJECTS['shops-bin'], x: 25, y: 11 },
+      { type: MAP_04_OBJECTS['tv'], x: 27, y: 14 },
+      { type: MAP_04_OBJECTS['double-bed'], x: 10, y: 15 },
       { type: MAP_04_OBJECTS['single-bed'], x: 14, y: 15 },
       { type: MAP_04_OBJECTS['single-bed'], x: 20, y: 15 },
-      /* master bedroom */
-      { type: MAP_04_OBJECTS['double-bed'], x: 10, y: 15 },
-      /* couch */
+      { type: MAP_04_OBJECTS['desk'], x: 22, y: 16 },
       { type: MAP_04_OBJECTS['three-seater-couch'], x: 27, y: 16 },
-      /* tv */
-      { type: MAP_04_OBJECTS['tv'], x: 27, y: 14 },
-      /* SUV */
+      { type: MAP_02_OBJECTS['playground-bush'], x: 15, y: 18 },
+      { type: MAP_02_OBJECTS['playground-bush'], x: 18, y: 18 },
+      { type: MAP_02_OBJECTS['playground-bush'], x: 21, y: 18 },
       { type: MAP_04_OBJECTS['suv'], x: 11, y: 20 },
-      /* kitchen sink */
-      { type: MAP_04_OBJECTS['kitchen-sink'], x: 24, y: 8 },
-      /* toilet */
-      { type: MAP_04_OBJECTS['toilet'], x: 16, y: 8 },
-      /* shower */
-      { type: MAP_04_OBJECTS['shower'], x: 13, y: 8 },
-      { type: MAP_04_OBJECTS['shower'], x: 10, y: 8 },
     ]
   },
   school: {
@@ -276,17 +266,18 @@ export const MAPS = {
       { id: 'basket-ball-10', type: INTERACTIVE_OBJECTS['basket-ball'], x: 104, y: 83, dir: 1 },
       { id: 'afl-ball-2', type: INTERACTIVE_OBJECTS['afl-ball'], x: 81, y: 78, dir: 1 },
       { id: 'afl-ball-3', type: INTERACTIVE_OBJECTS['afl-ball'], x: 82, y: 78, dir: 1 },
-      { id: 'chess-white-king-2', type: INTERACTIVE_OBJECTS['chess-white-king'], x: 31, y: 81, dir: 1 },
-      { id: 'chess-white-queen-2', type: INTERACTIVE_OBJECTS['chess-white-queen'], x: 30, y: 83, dir: 1 },
-      { id: 'chess-white-knight-2', type: INTERACTIVE_OBJECTS['chess-white-knight'], x: 30, y: 82, dir: 1 },
-      { id: 'chess-white-knight-3', type: INTERACTIVE_OBJECTS['chess-white-knight'], x: 31, y: 82, dir: 1 },
-      { id: 'chess-white-pawn-2', type: INTERACTIVE_OBJECTS['chess-white-pawn'], x: 33, y: 82, dir: 1 },
-      { id: 'chess-black-king-3', type: INTERACTIVE_OBJECTS['chess-black-king'], x: 32, y: 82, dir: 1 },
+      { id: 'chess-white-king-1', type: INTERACTIVE_OBJECTS['chess-white-king'], x: 30, y: 85, dir: 1 },
+      { id: 'chess-white-queen-1', type: INTERACTIVE_OBJECTS['chess-white-queen'], x: 32, y: 84, dir: 1 },
+      { id: 'chess-white-knight-1', type: INTERACTIVE_OBJECTS['chess-white-knight'], x: 33, y: 84, dir: 1 },
+      { id: 'chess-white-knight-2', type: INTERACTIVE_OBJECTS['chess-white-knight'], x: 31, y: 82, dir: 1 },
+      { id: 'chess-white-pawn-1', type: INTERACTIVE_OBJECTS['chess-white-pawn'], x: 32, y: 82, dir: 1 },
+      { id: 'chess-black-king-1', type: INTERACTIVE_OBJECTS['chess-black-king'], x: 34, y: 81, dir: 1 },
       { id: 'teacher-1', type: INTERACTIVE_OBJECTS['teacher'], x: 70, y: 9, dir: 1 },
       { id: 'teacher-2', type: INTERACTIVE_OBJECTS['teacher'], x: 75, y: 30, dir: 1 },
       { id: 'teacher-3', type: INTERACTIVE_OBJECTS['teacher'], x: 55, y: 50, dir: 1 },
       { id: 'teacher-4', type: INTERACTIVE_OBJECTS['teacher'], x: 65, y: 78, dir: 1 },
       { id: 'teacher-5', type: INTERACTIVE_OBJECTS['teacher'], x: 40, y: 95, dir: 1 },
+      { id: 'lost-property', type: INTERACTIVE_OBJECTS['lost-property'], x: 77, y: 66, dir: 1 },
     ],
     mission: {
       description: 'Find the secret Uno game happening during recess! Flip all the cards to reveal them and collect them.',
@@ -500,6 +491,9 @@ export const MAPS = {
       { type: MAP_01_OBJECTS['school-chair'], x: 35, y: 100 },
       { type: MAP_01_OBJECTS['school-chair'], x: 32, y: 101 },
       { type: MAP_01_OBJECTS['school-chair'], x: 33, y: 102 },
+      { type: MAP_02_OBJECTS['playground-bush'], x: 78, y: 63 },
+      { type: MAP_02_OBJECTS['playground-bush'], x: 77, y: 64 },
+      { type: MAP_02_OBJECTS['playground-bush'], x: 78, y: 64 },
     ],
   },
   playground: {

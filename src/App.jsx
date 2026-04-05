@@ -214,49 +214,89 @@ function App() {
         }
 
         if (!isCurrentlyOpen) {
-          // Opening: spawn contained item on an adjacent tile
+          // Opening: spawn contained items
+          const itemsToSpawn = interactiveAtTarget.type.containsItems || 
+                              (interactiveAtTarget.type.containsItem ? [{ id: interactiveAtTarget.type.containsItem, type: 'interactive' }] : []);
+          
           setActiveObstacles(prev => {
             const obsList = [...prev[currentMapId]];
             const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
-            obsList[idx] = { ...obsList[idx], isOpen: true };
+            const chest = obsList[idx];
+            obsList[idx] = { ...chest, isOpen: true };
 
-            // Spawn the contained item next to the chest
-            if (interactiveAtTarget.type.containsItem && !interactiveAtTarget.hasSpawnedItem) {
-              const itemConfig = INTERACTIVE_OBJECTS[interactiveAtTarget.type.containsItem];
-              if (itemConfig) {
-                // Find an adjacent walkable tile that isn't occupied
-                const adjacents = [
-                  { x: interactiveAtTarget.x + 1, y: interactiveAtTarget.y },
-                  { x: interactiveAtTarget.x - 1, y: interactiveAtTarget.y },
-                  { x: interactiveAtTarget.x, y: interactiveAtTarget.y + 1 },
-                  { x: interactiveAtTarget.x, y: interactiveAtTarget.y - 1 },
-                ];
-                const spawnTile = adjacents.find(t =>
+            if (!chest.hasSpawnedItem && itemsToSpawn.length > 0) {
+              // Find adjacent walkable tiles (8 directions)
+              const adjacents = [
+                { x: chest.x + 1, y: chest.y }, { x: chest.x - 1, y: chest.y },
+                { x: chest.x, y: chest.y + 1 }, { x: chest.x, y: chest.y - 1 },
+                { x: chest.x + 1, y: chest.y + 1 }, { x: chest.x - 1, y: chest.y - 1 },
+                { x: chest.x + 1, y: chest.y - 1 }, { x: chest.x - 1, y: chest.y + 1 },
+              ];
+
+              let usedTiles = [];
+              const outfitsToSpawn = [];
+
+              itemsToSpawn.forEach((item, i) => {
+                // Find a unique adjacent tile that is walkable and not currently occupied by an obstacle
+                let spawnTile = adjacents.find(t =>
                   isCellWalkable(mapData, t.x, t.y) &&
-                  !obsList.some(o => o.x === t.x && o.y === t.y)
+                  !obsList.some(o => o.x === t.x && o.y === t.y) &&
+                  !usedTiles.some(ut => ut.x === t.x && ut.y === t.y)
                 );
-                if (spawnTile) {
-                  const newObs = {
-                    id: `${interactiveAtTarget.id}-item-${Date.now()}`,
-                    type: itemConfig,
-                    x: spawnTile.x,
-                    y: spawnTile.y,
-                    dir: 1,
-                  };
-                  obsList.push(newObs);
-                  obsList[idx] = { ...obsList[idx], hasSpawnedItem: true };
 
-                  const toastId = `toast-${Date.now()}`;
-                  setToasts(prev => [...prev, { id: toastId, message: `A ${itemConfig.label} appeared from the chest!` }]);
-                  setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+                // Fallback: If no unique space, stack them on available tiles (or chest location)
+                // Comment: Stacking fallback to ensure items always appear. Developer should limit items per container.
+                if (!spawnTile) {
+                  spawnTile = adjacents.find(t => isCellWalkable(mapData, t.x, t.y)) || { x: chest.x, y: chest.y };
                 }
+                usedTiles.push(spawnTile);
+
+                if (item.type === 'interactive') {
+                  const config = INTERACTIVE_OBJECTS[item.id];
+                  if (config) {
+                    obsList.push({
+                      id: `${chest.id}-spawn-${item.id}-${i}-${Date.now()}`,
+                      type: config,
+                      x: spawnTile.x,
+                      y: spawnTile.y,
+                      dir: 1,
+                    });
+                  }
+                } else if (item.type === 'outfit') {
+                  const config = OUTFITS[item.id];
+                  if (config) {
+                    outfitsToSpawn.push({
+                      id: `${chest.id}-spawn-${item.id}-${i}-${Date.now()}`,
+                      type: 'clothing',
+                      outfit: config,
+                      x: spawnTile.x,
+                      y: spawnTile.y,
+                    });
+                  }
+                }
+              });
+
+              obsList[idx] = { ...obsList[idx], hasSpawnedItem: true };
+
+              // Trigger side-effect update for outfits state
+              if (outfitsToSpawn.length > 0) {
+                setTimeout(() => {
+                  setWorldItems(wPrev => ({
+                    ...wPrev,
+                    [currentMapId]: [...(wPrev[currentMapId] || []), ...outfitsToSpawn]
+                  }));
+                }, 0);
               }
+
+              const toastId = `toast-spawn-${Date.now()}`;
+              setToasts(tPrev => [...tPrev, { id: toastId, message: `Items appeared from the ${chest.type.label}!` }]);
+              setTimeout(() => setToasts(tPrev => tPrev.filter(t => t.id !== toastId)), 3000);
             }
 
             return { ...prev, [currentMapId]: obsList };
           });
 
-          const toastId = `toast-${Date.now()}`;
+          const toastId = `toast-open-${Date.now()}`;
           setToasts(prev => [...prev, { id: toastId, message: `Opened ${interactiveAtTarget.type.label}` }]);
           setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
         } else {
@@ -605,6 +645,10 @@ function App() {
 
         <div className="map-title" style={{ alignSelf: 'center', fontSize: '2rem', fontWeight: 800, color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.3)', pointerEvents: 'none', marginBottom: '20px' }}>
           {mapData.name}
+        </div>
+
+        <div className="coords-indicator">
+          ({playerPos.x}, {playerPos.y})
         </div>
       </div>
 

@@ -1,6 +1,8 @@
 import schoolUniform from './school-uniform.png';
 import yellowPyjamas from './yellow-pyjamas.png';
 import crows from './crows.png';
+import redCrayon from './red-crayon.png';
+import schoolSportUniform from './school-sport-uniform.png';
 
 /**
  * Outfit descriptor — mirrors the MAP_XX_OBJECTS pattern.
@@ -42,5 +44,18 @@ export const OUTFITS = {
       { map: 'suburban_house', x: 10, y: 12 },
     ],
   },
+  'red-crayon': {
+    id: 'red-crayon',
+    name: 'Red Crayon Suit',
+    src: redCrayon,
+    price: 15, // Price > 0
+    spawns: [], // Empty spawns makes it appear in the Shop
+  },
+  'school-sport-uniform': {
+    id: 'school-sport-uniform',
+    name: 'School Sport Uniform',
+    src: schoolSportUniform,
+    price: 15, // Price > 0
+    spawns: [], // Empty spawns makes it appear in the Shop
+  },
 };
-

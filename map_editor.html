@@ -205,6 +205,7 @@
       <div class="control-row">
         <button class="btn active-mode" id="modeTileBtn">🎨 Tile Mode</button>
         <button class="btn secondary" id="modeObjBtn">📦 Object Mode</button>
+        <button class="btn secondary" id="modeDiamondBtn">💎 Diamond Mode</button>
 
         <span style="margin: 0 15px; color: #ccc;">|</span>
 
@@ -276,6 +277,33 @@
           </div>
         </div>
 
+        <!-- DIAMOND MODE PANEL -->
+        <div id="panelDiamond" class="mode-panels">
+          <div>
+            <div class="section-box" style="border-color: #ffb703; background: #fffdf0;">
+              <h3 style="color: #ffb703;">Diamond Palette</h3>
+              <div class="palette" id="diamondPalette">
+                <button class="color-btn active" data-diamond="PLACE" id="diamondPlaceBtn">
+                  <div class="swatch" style="background:#ffb703; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div> <span>💎 Place Diamond</span>
+                </button>
+                <button class="color-btn" data-diamond="ERASER" id="diamondEraserBtn">
+                  <div class="swatch" style="background:#e74c3c;"></div> <span>🔴 Eraser</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="section-box">
+              <h3>Diamond Data (MAP_XX_DIAMONDS)</h3>
+              <textarea id="diamondIoBox"
+                placeholder="Paste your diamonds array here...&#10;[&#10;  { id: 'd1', x: 10, y: 15 },&#10;  { id: 'd2', x: 12, y: 15 }&#10;]"></textarea>
+              <div style="display: flex; gap: 10px; margin-top: 5px;">
+                <button class="btn secondary" id="btnLoadDiamonds" style="flex: 1;">Load Diamonds</button>
+                <button class="btn" id="btnExportDiamonds" style="flex: 1; background: #ffb703;">Export Diamonds</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div class="canvas-wrapper" id="canvasWrapper">
@@ -312,6 +340,10 @@
     let objectsData = []; // array of { type: "MAP_XX['x']", x, y, id?, dir? }
     let objectPaletteTypes = []; // string types "MAP_01_OBJECTS['school-chair']"
     let selectedObjectType = 'ERASER';
+
+    // Diamond State
+    let diamondsData = [];
+    let selectedDiamondAction = 'PLACE'; // 'PLACE' or 'ERASER'
 
     // Mock setup for JS parsing
     const makeProxy = (name) => new Proxy({}, { get: (t, p) => `${name}['${p}']` });
@@ -387,7 +419,25 @@
         }
       }
 
-      // 3. Draw Grid
+      // 4. Draw Diamonds
+      for (const d of diamondsData) {
+        ctx.fillStyle = '#ffb703';
+        ctx.beginPath();
+        const cx = d.x * tileSize + tileSize/2;
+        const cy = d.y * tileSize + tileSize/2;
+        const s = tileSize * 0.4;
+        ctx.moveTo(cx, cy - s);
+        ctx.lineTo(cx + s, cy);
+        ctx.lineTo(cx, cy + s);
+        ctx.lineTo(cx - s, cy);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#fb8500';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // 5. Draw Grid
       if (tileSize >= 8) {
         ctx.strokeStyle = 'rgba(0,0,0,0.15)';
         ctx.lineWidth = 1;
@@ -433,6 +483,17 @@
             renderMap();
           }
         }
+      } else if (editorMode === 'diamond' && isClick) {
+        if (selectedDiamondAction === 'ERASER') {
+          diamondsData = diamondsData.filter(d => d.x !== x || d.y !== y);
+          renderMap();
+        } else {
+          const exists = diamondsData.find(d => d.x === x && d.y === y);
+          if (!exists) {
+            diamondsData.push({ id: `d${Date.now()}`, x, y });
+            renderMap();
+          }
+        }
       }
     }
 
@@ -461,7 +522,33 @@
       modeTileBtn.className = 'btn secondary';
       panelObj.classList.add('active');
       panelTile.classList.remove('active');
+      panelDiamond.classList.remove('active');
       statusMsg.innerText = 'Tip: Click once on the map to place an object. Use Eraser to remove.';
+    };
+
+    const modeDiamondBtn = document.getElementById('modeDiamondBtn');
+    const panelDiamond = document.getElementById('panelDiamond').children[0];
+
+    modeDiamondBtn.onclick = () => {
+      editorMode = 'diamond';
+      modeDiamondBtn.className = 'btn active-mode';
+      modeTileBtn.className = 'btn secondary';
+      modeObjBtn.className = 'btn secondary';
+      panelDiamond.classList.add('active');
+      panelTile.classList.remove('active');
+      panelObj.classList.remove('active');
+      statusMsg.innerText = 'Tip: Place diamonds for Kylie to collect!';
+    };
+
+    document.getElementById('diamondPlaceBtn').onclick = () => {
+      selectedDiamondAction = 'PLACE';
+      document.getElementById('diamondPlaceBtn').classList.add('active');
+      document.getElementById('diamondEraserBtn').classList.remove('active');
+    };
+    document.getElementById('diamondEraserBtn').onclick = () => {
+      selectedDiamondAction = 'ERASER';
+      document.getElementById('diamondEraserBtn').classList.add('active');
+      document.getElementById('diamondPlaceBtn').classList.remove('active');
     };
 
     // --- TILE BUTTONS (I/O) ---
@@ -601,6 +688,32 @@
       out += ']';
       document.getElementById('objIoBox').value = out;
       statusMsg.innerText = 'Objects Array exported!';
+    };
+
+    // --- DIAMOND BUTTONS (I/O) ---
+    document.getElementById('btnLoadDiamonds').onclick = () => {
+      try {
+        const text = document.getElementById('diamondIoBox').value.trim();
+        if (!text) return;
+        const parsed = new Function('return ' + text + ';')();
+        if (Array.isArray(parsed)) {
+          diamondsData = parsed;
+          renderMap();
+          statusMsg.innerText = `Loaded ${diamondsData.length} diamonds.`;
+        } else throw new Error("Expected an array of objects");
+      } catch (err) { alert('Failed to parse diamonds array.\n' + err.message); }
+    };
+
+    document.getElementById('btnExportDiamonds').onclick = () => {
+      if (!diamondsData) return;
+      let out = '[\n';
+      const sorted = [...diamondsData].sort((a, b) => a.y - b.y || a.x - b.x);
+      for (const d of sorted) {
+        out += `  { id: '${d.id}', x: ${d.x}, y: ${d.y} },\n`;
+      }
+      out += ']';
+      document.getElementById('diamondIoBox').value = out;
+      statusMsg.innerText = 'Diamond Array exported!';
     };
 
     // Zoom
