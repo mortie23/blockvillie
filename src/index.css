@@ -49,6 +49,9 @@ body {
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
   box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+  touch-action: manipulation;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .button:hover {
@@ -324,11 +327,28 @@ body {
   padding: 30px;
   width: 90%;
   max-width: 500px;
+  max-height: 85dvh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
   text-align: center;
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Custom scrollbar for webkit */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+.modal-content::-webkit-scrollbar-track {
+  background: transparent; 
+}
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
 }
 
 @keyframes popIn {
@@ -359,6 +379,7 @@ body {
   font-size: 2rem;
   cursor: pointer;
   transition: all 0.2s;
+  touch-action: manipulation;
 }
 
 .closet-item:hover {
@@ -640,4 +661,75 @@ body {
   background: rgba(0, 0, 0, 0.2);
   padding: 4px 8px;
   border-radius: 8px;
+}
+
+/* ── Mobile Navigation Menu ──────────────────────────────────────────────── */
+.desktop-nav {
+  display: flex !important;
+}
+
+.mobile-nav-toggle {
+  display: none !important;
+  padding: 10px;
+}
+
+@media (max-width: 768px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  .mobile-nav-toggle {
+    display: block !important;
+  }
+}
+
+.mobile-menu-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100dvh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 250;
+  pointer-events: auto;
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
+}
+
+.slide-over-menu {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 250px;
+  height: 100dvh;
+  background: var(--color-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-left: 1px solid var(--color-glass-border);
+  box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  transform: translateX(100%);
+  animation: slideInRight 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.slide-over-menu .button {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  white-space: normal;
+}
+
+@keyframes slideInRight {
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
 }

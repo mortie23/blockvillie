@@ -160,7 +160,11 @@ export const INTERACTIVE_OBJECTS = {
     src: chewingGum,
     speed: 0, damage: 0,
     canCollect: true,
-    hitMessage: 'Yuck, old chewing gum!',
+    teleportOnCollect: {
+      message: "You have been caught with chewing gum! Straight to a blue dot.",
+      targetTileType: 9,
+    },
+    hitMessage: 'Picked up chewing gum!',
   },
   'phone': {
     id: 'phone',
@@ -169,6 +173,10 @@ export const INTERACTIVE_OBJECTS = {
     src: phone,
     speed: 0, damage: 0,
     canCollect: true,
+    teleportOnCollect: {
+      message: "You have been caught with a phone!\nGo straight to the a blue dot.",
+      targetTileType: 9,
+    },
     hitMessage: 'Picked up a phone!',
   },
   'rubiks-cube': {

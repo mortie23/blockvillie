@@ -53,6 +53,8 @@ export const MAPS = {
       { id: 'cat-2', type: INTERACTIVE_OBJECTS['cat'], x: 23, y: 11, dir: 1 },
       { id: 'key-1', type: INTERACTIVE_OBJECTS['key'], x: 12, y: 16, dir: 1 },
       { id: 'school-bag-1', type: INTERACTIVE_OBJECTS['school-bag'], x: 16, y: 16, dir: 1 },
+      { id: 'phone-1', type: INTERACTIVE_OBJECTS['phone'], x: 10, y: 14 },
+      { id: 'chewing-gum-1', type: INTERACTIVE_OBJECTS['chewing-gum'], x: 25, y: 10 },
     ],
     mission: {
       description: 'Get ready for school! Find your bag, grab the keys, wear your uniform, and head to out to the car on the driveway.',
@@ -248,8 +250,6 @@ export const MAPS = {
       { id: 'chewing-gum-18', type: INTERACTIVE_OBJECTS['chewing-gum'], x: 34, y: 97, dir: 1 },
       { id: 'phone-2', type: INTERACTIVE_OBJECTS['phone'], x: 57, y: 17, dir: 1 },
       { id: 'phone-3', type: INTERACTIVE_OBJECTS['phone'], x: 44, y: 95, dir: 1 },
-      { id: 'rubiks-cube-2', type: INTERACTIVE_OBJECTS['rubiks-cube'], x: 83, y: 45, dir: 1 },
-      { id: 'rubiks-cube-3', type: INTERACTIVE_OBJECTS['rubiks-cube'], x: 85, y: 45, dir: 1 },
       { id: 'violin-2', type: INTERACTIVE_OBJECTS['violin'], x: 50, y: 96, dir: 1 },
       { id: 'violin-3', type: INTERACTIVE_OBJECTS['violin'], x: 52, y: 96, dir: 1 },
       { id: 'violin-4', type: INTERACTIVE_OBJECTS['violin'], x: 54, y: 96, dir: 1 },
@@ -280,10 +280,11 @@ export const MAPS = {
       { id: 'lost-property', type: INTERACTIVE_OBJECTS['lost-property'], x: 77, y: 66, dir: 1 },
     ],
     mission: {
-      description: 'Find the secret Uno game happening during recess! Flip all the cards to reveal them and collect them.',
-      outfit: 'school-uniform',
-      items: ['uno-green-3', 'uno-red-6', 'uno-draw-4'],
-      target: { x: 74, y: 50, width: 4, height: 4 }
+      description: 'Find the Uno cards, move the white queen to make the black king checkmate, unlock the chest for the rubiks cube, and get the notebook and sport uniform from lost property! Make sure you aren\'t carrying any phones or chewing gum!',
+      outfit: 'school-sport-uniform',
+      items: ['uno-green-3', 'uno-red-6', 'uno-draw-4', 'notebook', 'rubiks-cube', 'treasure-chest-key'],
+      forbiddenItems: ['phone', 'chewing-gum'],
+      customObstacleConditions: [{ id: 'chess-white-queen-1', x: 32, y: 83 }]
     },
     objects: [
       { type: MAP_01_OBJECTS['school-chair'], x: 70, y: 5 },

@@ -12,6 +12,7 @@ import char11 from '../assets/img/character/character-11.png';
 import char12 from '../assets/img/character/character-12.png';
 import char13 from '../assets/img/character/character-13.png';
 import char14 from '../assets/img/character/character-14.png';
+import char15 from '../assets/img/character/character-15.png';
 
 export const CHARACTERS = [
   { id: '01', src: char01, name: 'Mia' },
@@ -28,4 +29,5 @@ export const CHARACTERS = [
   { id: '12', src: char12, name: 'Felicity' },
   { id: '13', src: char13, name: 'Kylie' },
   { id: '14', src: char14, name: 'Emily' },
+  { id: '15', src: char15, name: 'Christopher' },
 ];

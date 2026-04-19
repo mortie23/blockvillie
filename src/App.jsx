@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Diamond, X, Map as MapIcon, ShoppingBag, Users, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Diamond, X, Map as MapIcon, ShoppingBag, Users, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu } from 'lucide-react';
 import { MAPS } from './components/MapData';
 import { CHARACTERS } from './components/Characters';
 import { OUTFITS } from './assets/img/outfit/data.js';
@@ -92,8 +92,11 @@ function App() {
   }, []);
 
   // Modals & UI
-  const [activeModal, setActiveModal] = useState(null); // 'clothing', 'closet', 'shop', 'map'
+  const [activeModal, setActiveModal] = useState(null); // 'clothing', 'closet', 'shop', 'map', 'possessions', 'place_possession', 'teleport_message'
   const [pendingItem, setPendingItem] = useState(null); // Item player just stood on
+  const [selectedPossession, setSelectedPossession] = useState(null); // Type of possession pending drop
+  const [teleportData, setTeleportData] = useState(null); // { message, targetPos }
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Current map data
   const mapData = MAPS[currentMapId];
@@ -171,6 +174,13 @@ function App() {
                 const obsList = [...prev[currentMapId]];
                 const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
                 obsList[idx] = { ...obsList[idx], x: targetX, y: targetY };
+                
+                if (interactiveAtTarget.id === 'chess-white-queen-1' && targetX === 32 && targetY === 83) {
+                  const toastId = `toast-checkmate-${Date.now()}`;
+                  setToasts(tPrev => [...tPrev, { id: toastId, message: "check mate" }]);
+                  setTimeout(() => setToasts(tPrev => tPrev.filter(t => t.id !== toastId)), 3000);
+                }
+
                 return { ...prev, [currentMapId]: obsList };
               });
               setPlayerPos({ x, y });
@@ -504,7 +514,26 @@ function App() {
         ...prev,
         [currentMapId]: prev[currentMapId].filter(o => o.id !== hitObs.id)
       }));
-      if (hitObs.type.hitMessage) {
+
+      if (hitObs.type.teleportOnCollect) {
+        const { message, targetTileType } = hitObs.type.teleportOnCollect;
+        let targetPos = null;
+        for (let y = 0; y < mapData.height; y++) {
+          for (let x = 0; x < mapData.width; x++) {
+            if (mapData.data[y][x] === targetTileType) {
+              targetPos = { x, y };
+              break; 
+            }
+          }
+          if (targetPos) break;
+        }
+
+        if (targetPos) {
+           setTeleportData({ message, targetPos });
+           setActiveModal('teleport_message');
+           setPlayerPos(targetPos);
+        }
+      } else if (hitObs.type.hitMessage) {
         const toastId = `toast-${Date.now()}`;
         setToasts(prev => [...prev, { id: toastId, message: hitObs.type.hitMessage }]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
@@ -518,19 +547,39 @@ function App() {
     if (!mission || completedMissions[currentMapId]) return;
 
     const hasItems = mission.items.every(itemId => possessions.some(p => p.id === itemId));
+    
+    let hasForbiddenItems = false;
+    if (mission.forbiddenItems) {
+      hasForbiddenItems = mission.forbiddenItems.some(itemId => possessions.some(p => p.id === itemId));
+    }
+
     const equippedItem = inventory.find(i => i.id === equipped);
     const hasOutfit = equippedItem && equippedItem.outfit.id === mission.outfit;
-    const target = mission.target;
     
-    // Player must be adjacent or within the target rect (since target might be solid)
-    const isAtTarget = playerPos.x >= target.x - 1 && playerPos.x <= target.x + target.width &&
-                       playerPos.y >= target.y - 1 && playerPos.y <= target.y + target.height;
+    let isAtTarget = true;
+    if (mission.target) {
+      const target = mission.target;
+      isAtTarget = playerPos.x >= target.x - 1 && playerPos.x <= target.x + target.width &&
+                   playerPos.y >= target.y - 1 && playerPos.y <= target.y + target.height;
+    }
 
-    if (hasItems && hasOutfit && isAtTarget) {
+    let hasCustomConditions = true;
+    if (mission.customObstacleConditions) {
+      const obsMap = activeObstacles[currentMapId] || [];
+      hasCustomConditions = mission.customObstacleConditions.every(cond => {
+        const obs = obsMap.find(o => o.id === cond.id);
+        if (!obs) return false;
+        if (cond.x !== undefined && obs.x !== cond.x) return false;
+        if (cond.y !== undefined && obs.y !== cond.y) return false;
+        return true;
+      });
+    }
+
+    if (hasItems && !hasForbiddenItems && hasOutfit && isAtTarget && hasCustomConditions) {
       setCompletedMissions(prev => ({ ...prev, [currentMapId]: true }));
       setActiveModal('missioncomplete');
     }
-  }, [playerPos, equipped, possessions, mapData, currentMapId, completedMissions, inventory]);
+  }, [playerPos, equipped, possessions, mapData, currentMapId, completedMissions, inventory, activeObstacles]);
 
   const acceptClothing = (equipIndex) => {
     if (!pendingItem) return;
@@ -581,6 +630,51 @@ function App() {
     setActiveModal(null);
   };
 
+  const placeDownPossession = (itemType) => {
+    const { x: px, y: py } = playerPos;
+    const adjacents = [
+      { x: px + 1, y: py },     // directly right (priority)
+      { x: px - 1, y: py },     // left
+      { x: px, y: py - 1 },     // up
+      { x: px, y: py + 1 },     // down
+      { x: px + 1, y: py - 1 }, // up-right
+      { x: px + 1, y: py + 1 }, // down-right
+      { x: px - 1, y: py - 1 }, // up-left
+      { x: px - 1, y: py + 1 }, // down-left
+    ];
+
+    const currentObs = activeObstacles[currentMapId] || [];
+    let spawnTile = adjacents.find(t => 
+      isCellWalkable(mapData, t.x, t.y) && 
+      !currentObs.some(o => o.x === t.x && o.y === t.y)
+    );
+
+    if (!spawnTile) spawnTile = { x: px, y: py }; // fallback to stack on player
+
+    // Remove from possessions
+    setPossessions(prev => prev.filter(p => p.id !== itemType.id));
+
+    // Spawn on map
+    setActiveObstacles(prev => {
+      const obsList = [...(prev[currentMapId] || [])];
+      obsList.push({
+        id: `dropped-${itemType.id}-${Date.now()}`,
+        type: itemType,
+        x: spawnTile.x,
+        y: spawnTile.y,
+        dir: 1,
+      });
+      return { ...prev, [currentMapId]: obsList };
+    });
+
+    setActiveModal(null);
+    setSelectedPossession(null);
+    
+    const toastId = `toast-drop-${Date.now()}`;
+    setToasts(tPrev => [...tPrev, { id: toastId, message: `Placed down ${itemType.label}` }]);
+    setTimeout(() => setToasts(tPrev => tPrev.filter(t => t.id !== toastId)), 3000);
+  };
+
   // Camera bounds calculation (so you don't see out-of-bounds map)
   const mapWidthPx = mapData.width * TILE_SIZE;
   const mapHeightPx = mapData.height * TILE_SIZE;
@@ -601,6 +695,26 @@ function App() {
   const maxX = Math.min(mapData.width - 1, Math.ceil((cameraLeft + windowSize.w) / TILE_SIZE) + 2);
   const minY = Math.max(0, Math.floor(cameraTop / TILE_SIZE) - 2);
   const maxY = Math.min(mapData.height - 1, Math.ceil((cameraTop + windowSize.h) / TILE_SIZE) + 2);
+
+  const renderNavButtons = (isMobile) => (
+    <>
+      <button className="button secondary" onClick={() => { setActiveModal('map'); if(isMobile) setIsMobileMenuOpen(false); }}>
+        <MapIcon size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Map
+      </button>
+      <button className="button" style={{ background: '#4ecdc4', color: '#fff' }} onClick={() => { setActiveModal('characters'); if(isMobile) setIsMobileMenuOpen(false); }}>
+        <Users size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Characters
+      </button>
+      <button className="button" onClick={() => { setActiveModal('possessions'); if(isMobile) setIsMobileMenuOpen(false); }}>
+        🎒 Possessions
+      </button>
+      <button className="button" onClick={() => { setActiveModal('closet'); if(isMobile) setIsMobileMenuOpen(false); }}>
+        👗 Closet
+      </button>
+      <button className="button" style={{ background: '#9d4edd' }} onClick={() => { setActiveModal('shop'); if(isMobile) setIsMobileMenuOpen(false); }}>
+        <ShoppingBag size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Shop
+      </button>
+    </>
+  );
 
   return (
     <div className={`game-container${hitFlash ? ' hit' : ''}`}>
@@ -624,23 +738,12 @@ function App() {
             {diamonds}
           </div>
 
-          <div className="top-bar-buttons hide-scrollbar">
-            <button className="button secondary" onClick={() => setActiveModal('map')}>
-              <MapIcon size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Map
-            </button>
-            <button className="button" style={{ background: '#4ecdc4', color: '#fff' }} onClick={() => setActiveModal('characters')}>
-              <Users size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Characters
-            </button>
-            <button className="button" onClick={() => setActiveModal('possessions')}>
-              🎒 Possessions
-            </button>
-            <button className="button" onClick={() => setActiveModal('closet')}>
-              👗 Closet
-            </button>
-            <button className="button" style={{ background: '#9d4edd' }} onClick={() => setActiveModal('shop')}>
-              <ShoppingBag size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Shop
-            </button>
+          <div className="top-bar-buttons hide-scrollbar desktop-nav">
+            {renderNavButtons(false)}
           </div>
+          <button className="button mobile-nav-toggle" onClick={() => setIsMobileMenuOpen(true)}>
+            <Menu size={24} style={{ verticalAlign: 'middle' }} />
+          </button>
         </div>
 
         <div className="map-title" style={{ alignSelf: 'center', fontSize: '2rem', fontWeight: 800, color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.3)', pointerEvents: 'none', marginBottom: '20px' }}>
@@ -778,6 +881,20 @@ function App() {
           </div>
         </div>
       </div>
+
+      {isMobileMenuOpen && (
+        <div className="mobile-menu-overlay" onClick={() => setIsMobileMenuOpen(false)}>
+          <div className="slide-over-menu" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, color: '#fff' }}>Menu</h2>
+              <button className="button secondary" style={{ padding: '5px 10px' }} onClick={() => setIsMobileMenuOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            {renderNavButtons(true)}
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {activeModal === 'gameover' && (
@@ -948,13 +1065,53 @@ function App() {
             ) : (
               <div className="closet-grid">
                 {possessions.map(item => (
-                  <div key={item.id} className="closet-item">
+                  <div key={item.id} className="closet-item" onClick={() => { setSelectedPossession(item); setActiveModal('place_possession'); }}>
                     <img src={item.src} alt={item.label} style={{ width: 56, height: 56, objectFit: 'contain', margin: '0 auto', display: 'block' }} />
                     <div style={{ fontSize: '0.9rem', marginTop: '10px', textAlign: 'center' }}>{item.label}</div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {activeModal === 'place_possession' && selectedPossession && (
+        <div className="modal-overlay">
+          <div className="glass-panel modal-content" style={{ maxWidth: '400px' }}>
+            <h2>Place Object?</h2>
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '15px 0' }}>
+              <img src={selectedPossession.src} alt={selectedPossession.label} style={{ width: 80, height: 80, objectFit: 'contain' }} />
+            </div>
+            <p>Do you want to place the {selectedPossession.label} down on the ground?</p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '20px' }}>
+              <button className="button secondary" onClick={() => placeDownPossession(selectedPossession)}>Place Down</button>
+              <button className="button" onClick={() => setActiveModal('possessions')}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeModal === 'teleport_message' && teleportData && (
+        <div className="modal-overlay">
+          <div className="glass-panel modal-content" style={{ maxWidth: '400px' }}>
+            <div style={{ fontSize: '4rem', textAlign: 'center' }}>⚠️</div>
+            <h2 style={{ color: '#e63946', fontSize: '2rem', textAlign: 'center' }}>Whoops!</h2>
+            <p style={{ color: '#555', textAlign: 'center', whiteSpace: 'pre-wrap', fontSize: '1.2rem' }}>
+              {teleportData.message}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+              <button 
+                className="button" 
+                style={{ background: '#4ecdc4', fontSize: '1.1rem', padding: '14px 30px' }} 
+                onClick={() => {
+                  setActiveModal(null);
+                  setTeleportData(null);
+                }}
+              >
+                Continue
+              </button>
+            </div>
           </div>
         </div>
       )}

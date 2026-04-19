@@ -3,6 +3,8 @@ import yellowPyjamas from './yellow-pyjamas.png';
 import crows from './crows.png';
 import redCrayon from './red-crayon.png';
 import schoolSportUniform from './school-sport-uniform.png';
+import blueyCostume from './bluey-costume.png';
+import elsaCostume from './elsa-costume.png';
 
 /**
  * Outfit descriptor — mirrors the MAP_XX_OBJECTS pattern.
@@ -37,7 +39,7 @@ export const OUTFITS = {
   },
   'crows': {
     id: 'crows',
-    name: 'Crows',
+    name: 'Crows Guernsey',
     src: crows,
     price: 10,
     spawns: [
@@ -56,6 +58,20 @@ export const OUTFITS = {
     name: 'School Sport Uniform',
     src: schoolSportUniform,
     price: 15, // Price > 0
+    spawns: [], // Empty spawns makes it appear in the Shop
+  },
+  'bluey-costume': {
+    id: 'bluey-costume',
+    name: 'Bluey Costume',
+    src: blueyCostume,
+    price: 25, // Price > 0
+    spawns: [], // Empty spawns makes it appear in the Shop
+  },
+  'elsa-costume': {
+    id: 'elsa-costume',
+    name: 'Elsa Costume',
+    src: elsaCostume,
+    price: 50, // Price > 0
     spawns: [], // Empty spawns makes it appear in the Shop
   },
 };
