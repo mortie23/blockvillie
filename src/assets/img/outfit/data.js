@@ -71,7 +71,7 @@ export const OUTFITS = {
     id: 'elsa-costume',
     name: 'Elsa Costume',
     src: elsaCostume,
-    price: 50, // Price > 0
+    price: 10, // Price > 0
     spawns: [], // Empty spawns makes it appear in the Shop
   },
 };
