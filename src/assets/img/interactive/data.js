@@ -26,6 +26,9 @@ import sharpener from '../map/02/sharpener.png';
 import notebook from '../map/02/notebook.png';
 import lostProperty from '../map/02/lost-property.png';
 import lostPropertyOpen from '../map/02/lost-property-open.png';
+import icecream from '../map/05/icecream.png';
+import popcorn from '../map/05/popcorn.png';
+
 
 export const INTERACTIVE_OBJECTS = {
   'cat': {
@@ -292,5 +295,23 @@ export const INTERACTIVE_OBJECTS = {
     speed: 0, damage: 0,
     canCollect: true,
     hitMessage: 'Picked up a Notebook! 📓',
+  },
+  'icecream': {
+    id: 'icecream',
+    label: 'Ice Cream',
+    width: 1, height: 1,
+    src: icecream,
+    speed: 0, damage: 0,
+    canCollect: true,
+    hitMessage: 'Picked up an Ice Cream! 🍦',
+  },
+  'popcorn': {
+    id: 'popcorn',
+    label: 'Popcorn',
+    width: 1, height: 1,
+    src: popcorn,
+    speed: 0, damage: 0,
+    canCollect: true,
+    hitMessage: 'Picked up a Popcorn! 🍿',
   },
 };
