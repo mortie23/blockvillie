@@ -170,19 +170,17 @@ function App() {
             const isTargetInteractiveObj = activeObs.some(o => o.x === targetX && o.y === targetY);
             
             if (!isTargetStaticObj && !isTargetInteractiveObj) {
-              setActiveObstacles(prev => {
-                const obsList = [...prev[currentMapId]];
-                const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
-                obsList[idx] = { ...obsList[idx], x: targetX, y: targetY };
-                
-                if (interactiveAtTarget.id === 'chess-white-queen-1' && targetX === 32 && targetY === 83) {
-                  const toastId = `toast-checkmate-${Date.now()}`;
-                  setToasts(tPrev => [...tPrev, { id: toastId, message: "check mate" }]);
-                  setTimeout(() => setToasts(tPrev => tPrev.filter(t => t.id !== toastId)), 3000);
-                }
+              const obsList = [...activeObs];
+              const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
+              obsList[idx] = { ...obsList[idx], x: targetX, y: targetY };
+              setActiveObstacles({ ...activeObstaclesRef.current, [currentMapId]: obsList });
+              
+              if (interactiveAtTarget.id === 'chess-white-queen-1' && targetX === 32 && targetY === 83) {
+                const toastId = `toast-checkmate-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                setToasts(tPrev => [...tPrev, { id: toastId, message: "check mate" }]);
+                setTimeout(() => setToasts(tPrev => tPrev.filter(t => t.id !== toastId)), 3000);
+              }
 
-                return { ...prev, [currentMapId]: obsList };
-              });
               setPlayerPos({ x, y });
             }
           }
@@ -192,13 +190,11 @@ function App() {
 
       if (interactiveAtTarget.type.canTurnOver) {
         if (!interactiveAtTarget.turnedOver) {
-          setActiveObstacles(prev => {
-            const obsList = [...prev[currentMapId]];
-            const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
-            obsList[idx] = { ...obsList[idx], turnedOver: true };
-            return { ...prev, [currentMapId]: obsList };
-          });
-          const toastId = `toast-${Date.now()}`;
+          const obsList = [...activeObs];
+          const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
+          obsList[idx] = { ...obsList[idx], turnedOver: true };
+          setActiveObstacles({ ...activeObstaclesRef.current, [currentMapId]: obsList });
+          const toastId = `toast-flip-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
           setToasts(prev => [...prev, { id: toastId, message: `Turned over ${interactiveAtTarget.type.label}` }]);
           setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
           return; // Block movement because we just flipped it
@@ -217,7 +213,7 @@ function App() {
         const hasReqItem = !reqItem || currentPossessions.some(p => p.id === reqItem);
 
         if (!isCurrentlyOpen && reqItem && !hasReqItem) {
-          const toastId = `toast-${Date.now()}`;
+          const toastId = `toast-req-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
           setToasts(prev => [...prev, { id: toastId, message: `Requires ${reqItem} to open!` }]);
           setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
           return;
@@ -228,96 +224,93 @@ function App() {
           const itemsToSpawn = interactiveAtTarget.type.containsItems || 
                               (interactiveAtTarget.type.containsItem ? [{ id: interactiveAtTarget.type.containsItem, type: 'interactive' }] : []);
           
-          setActiveObstacles(prev => {
-            const obsList = [...prev[currentMapId]];
-            const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
-            const chest = obsList[idx];
-            obsList[idx] = { ...chest, isOpen: true };
+          const obsList = [...activeObs];
+          const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
+          const chest = obsList[idx];
+          obsList[idx] = { ...chest, isOpen: true };
 
-            if (!chest.hasSpawnedItem && itemsToSpawn.length > 0) {
-              // Find adjacent walkable tiles (8 directions)
-              const adjacents = [
-                { x: chest.x + 1, y: chest.y }, { x: chest.x - 1, y: chest.y },
-                { x: chest.x, y: chest.y + 1 }, { x: chest.x, y: chest.y - 1 },
-                { x: chest.x + 1, y: chest.y + 1 }, { x: chest.x - 1, y: chest.y - 1 },
-                { x: chest.x + 1, y: chest.y - 1 }, { x: chest.x - 1, y: chest.y + 1 },
-              ];
+          if (!chest.hasSpawnedItem && itemsToSpawn.length > 0) {
+            // Find adjacent walkable tiles (8 directions)
+            const adjacents = [
+              { x: chest.x + 1, y: chest.y }, { x: chest.x - 1, y: chest.y },
+              { x: chest.x, y: chest.y + 1 }, { x: chest.x, y: chest.y - 1 },
+              { x: chest.x + 1, y: chest.y + 1 }, { x: chest.x - 1, y: chest.y - 1 },
+              { x: chest.x + 1, y: chest.y - 1 }, { x: chest.x - 1, y: chest.y + 1 },
+            ];
 
-              let usedTiles = [];
-              const outfitsToSpawn = [];
+            let usedTiles = [];
+            const outfitsToSpawn = [];
 
-              itemsToSpawn.forEach((item, i) => {
-                // Find a unique adjacent tile that is walkable and not currently occupied by an obstacle
-                let spawnTile = adjacents.find(t =>
-                  isCellWalkable(mapData, t.x, t.y) &&
-                  !obsList.some(o => o.x === t.x && o.y === t.y) &&
-                  !usedTiles.some(ut => ut.x === t.x && ut.y === t.y)
-                );
+            itemsToSpawn.forEach((item, i) => {
+              // Find a unique adjacent tile that is walkable and not currently occupied by an obstacle
+              let spawnTile = adjacents.find(t =>
+                isCellWalkable(mapData, t.x, t.y) &&
+                !obsList.some(o => o.x === t.x && o.y === t.y) &&
+                !usedTiles.some(ut => ut.x === t.x && ut.y === t.y)
+              );
 
-                // Fallback: If no unique space, stack them on available tiles (or chest location)
-                // Comment: Stacking fallback to ensure items always appear. Developer should limit items per container.
-                if (!spawnTile) {
-                  spawnTile = adjacents.find(t => isCellWalkable(mapData, t.x, t.y)) || { x: chest.x, y: chest.y };
-                }
-                usedTiles.push(spawnTile);
-
-                if (item.type === 'interactive') {
-                  const config = INTERACTIVE_OBJECTS[item.id];
-                  if (config) {
-                    obsList.push({
-                      id: `${chest.id}-spawn-${item.id}-${i}-${Date.now()}`,
-                      type: config,
-                      x: spawnTile.x,
-                      y: spawnTile.y,
-                      dir: 1,
-                    });
-                  }
-                } else if (item.type === 'outfit') {
-                  const config = OUTFITS[item.id];
-                  if (config) {
-                    outfitsToSpawn.push({
-                      id: `${chest.id}-spawn-${item.id}-${i}-${Date.now()}`,
-                      type: 'clothing',
-                      outfit: config,
-                      x: spawnTile.x,
-                      y: spawnTile.y,
-                    });
-                  }
-                }
-              });
-
-              obsList[idx] = { ...obsList[idx], hasSpawnedItem: true };
-
-              // Trigger side-effect update for outfits state
-              if (outfitsToSpawn.length > 0) {
-                setTimeout(() => {
-                  setWorldItems(wPrev => ({
-                    ...wPrev,
-                    [currentMapId]: [...(wPrev[currentMapId] || []), ...outfitsToSpawn]
-                  }));
-                }, 0);
+              // Fallback: If no unique space, stack them on available tiles (or chest location)
+              // Comment: Stacking fallback to ensure items always appear. Developer should limit items per container.
+              if (!spawnTile) {
+                spawnTile = adjacents.find(t => isCellWalkable(mapData, t.x, t.y)) || { x: chest.x, y: chest.y };
               }
+              usedTiles.push(spawnTile);
 
-              const toastId = `toast-spawn-${Date.now()}`;
-              setToasts(tPrev => [...tPrev, { id: toastId, message: `Items appeared from the ${chest.type.label}!` }]);
-              setTimeout(() => setToasts(tPrev => tPrev.filter(t => t.id !== toastId)), 3000);
+              if (item.type === 'interactive') {
+                const config = INTERACTIVE_OBJECTS[item.id];
+                if (config) {
+                  obsList.push({
+                    id: `${chest.id}-spawn-${item.id}-${i}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+                    type: config,
+                    x: spawnTile.x,
+                    y: spawnTile.y,
+                    dir: 1,
+                  });
+                }
+              } else if (item.type === 'outfit') {
+                const config = OUTFITS[item.id];
+                if (config) {
+                  outfitsToSpawn.push({
+                    id: `${chest.id}-spawn-${item.id}-${i}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+                    type: 'clothing',
+                    outfit: config,
+                    x: spawnTile.x,
+                    y: spawnTile.y,
+                  });
+                }
+              }
+            });
+
+            obsList[idx] = { ...obsList[idx], hasSpawnedItem: true };
+
+            // Trigger side-effect update for outfits state
+            if (outfitsToSpawn.length > 0) {
+              setTimeout(() => {
+                setWorldItems(wPrev => ({
+                  ...wPrev,
+                  [currentMapId]: [...(wPrev[currentMapId] || []), ...outfitsToSpawn]
+                }));
+              }, 0);
             }
 
-            return { ...prev, [currentMapId]: obsList };
-          });
+            const toastId = `toast-spawn-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+            setToasts(tPrev => [...tPrev, { id: toastId, message: `Items appeared from the ${chest.type.label}!` }]);
+            setTimeout(() => setToasts(tPrev => tPrev.filter(t => t.id !== toastId)), 3000);
+          }
 
-          const toastId = `toast-open-${Date.now()}`;
+          setActiveObstacles({ ...activeObstaclesRef.current, [currentMapId]: obsList });
+
+          const toastId = `toast-open-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
           setToasts(prev => [...prev, { id: toastId, message: `Opened ${interactiveAtTarget.type.label}` }]);
           setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
         } else {
           // Closing
-          setActiveObstacles(prev => {
-            const obsList = [...prev[currentMapId]];
-            const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
-            obsList[idx] = { ...obsList[idx], isOpen: false };
-            return { ...prev, [currentMapId]: obsList };
-          });
-          const toastId = `toast-${Date.now()}`;
+          const obsList = [...activeObs];
+          const idx = obsList.findIndex(o => o.id === interactiveAtTarget.id);
+          obsList[idx] = { ...obsList[idx], isOpen: false };
+          setActiveObstacles({ ...activeObstaclesRef.current, [currentMapId]: obsList });
+
+          const toastId = `toast-close-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
           setToasts(prev => [...prev, { id: toastId, message: `Closed ${interactiveAtTarget.type.label}` }]);
           setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
         }
@@ -377,105 +370,104 @@ function App() {
       const mapId = currentMapIdRef.current;
       const mapDef = MAPS[mapId];
 
-      setActiveObstacles(prev => {
-        const mapObs = prev[mapId];
-        if (!mapObs || mapObs.length === 0) return prev;
+      const prevObs = activeObstaclesRef.current;
+      const mapObs = prevObs[mapId];
+      if (!mapObs || mapObs.length === 0) return;
 
-        const updated = mapObs.map(obs => {
-          // Speed: steps per second → ticks to skip
-          const ticksPerStep = Math.max(1, Math.round((obs.type.speed * 1000) / TICK_MS));
-          tickCounters[obs.id] = (tickCounters[obs.id] || 0) + 1;
-          if (tickCounters[obs.id] < ticksPerStep) return obs; // not time to move yet
-          tickCounters[obs.id] = 0;
+      const updated = mapObs.map(obs => {
+        // Speed: steps per second → ticks to skip
+        const ticksPerStep = Math.max(1, Math.round((obs.type.speed * 1000) / TICK_MS));
+        tickCounters[obs.id] = (tickCounters[obs.id] || 0) + 1;
+        if (tickCounters[obs.id] < ticksPerStep) return obs; // not time to move yet
+        tickCounters[obs.id] = 0;
 
-          // Compute candidate next position
-          let nx, ny, newDir;
+        // Compute candidate next position
+        let nx, ny, newDir;
 
-          if (obs.type.axis === 'random') {
-            // Random walk: pick a random direction each step
-            const directions = [
-              { dx: 1, dy: 0 },   // right
-              { dx: -1, dy: 0 },  // left
-              { dx: 0, dy: 1 },   // down
-              { dx: 0, dy: -1 },  // up
-            ];
-            // Shuffle and try each direction until one is walkable
-            const shuffled = directions.sort(() => Math.random() - 0.5);
-            let moved = false;
-            for (const d of shuffled) {
-              const cx = obs.x + d.dx;
-              const cy = obs.y + d.dy;
-              if (isCellWalkable(mapDef, cx, cy)) {
-                nx = cx;
-                ny = cy;
-                newDir = d.dx !== 0 ? d.dx : obs.dir;
-                moved = true;
-                break;
-              }
+        if (obs.type.axis === 'random') {
+          // Random walk: pick a random direction each step
+          const directions = [
+            { dx: 1, dy: 0 },   // right
+            { dx: -1, dy: 0 },  // left
+            { dx: 0, dy: 1 },   // down
+            { dx: 0, dy: -1 },  // up
+          ];
+          // Shuffle and try each direction until one is walkable
+          const shuffled = directions.sort(() => Math.random() - 0.5);
+          let moved = false;
+          for (const d of shuffled) {
+            const cx = obs.x + d.dx;
+            const cy = obs.y + d.dy;
+            if (isCellWalkable(mapDef, cx, cy)) {
+              nx = cx;
+              ny = cy;
+              newDir = d.dx !== 0 ? d.dx : obs.dir;
+              moved = true;
+              break;
             }
-            if (!moved) {
+          }
+          if (!moved) {
+            nx = obs.x;
+            ny = obs.y;
+            newDir = obs.dir;
+          }
+        } else {
+          // Standard patrol: x or y axis
+          nx = obs.x + (obs.type.axis === 'x' ? obs.dir : 0);
+          ny = obs.y + (obs.type.axis === 'y' ? obs.dir : 0);
+          newDir = obs.dir;
+
+          if (!isCellWalkable(mapDef, nx, ny)) {
+            // Bounce — try reverse
+            newDir = -obs.dir;
+            nx = obs.x + (obs.type.axis === 'x' ? newDir : 0);
+            ny = obs.y + (obs.type.axis === 'y' ? newDir : 0);
+            // If still not walkable, stay put
+            if (!isCellWalkable(mapDef, nx, ny)) {
               nx = obs.x;
               ny = obs.y;
               newDir = obs.dir;
             }
-          } else {
-            // Standard patrol: x or y axis
-            nx = obs.x + (obs.type.axis === 'x' ? obs.dir : 0);
-            ny = obs.y + (obs.type.axis === 'y' ? obs.dir : 0);
-            newDir = obs.dir;
-
-            if (!isCellWalkable(mapDef, nx, ny)) {
-              // Bounce — try reverse
-              newDir = -obs.dir;
-              nx = obs.x + (obs.type.axis === 'x' ? newDir : 0);
-              ny = obs.y + (obs.type.axis === 'y' ? newDir : 0);
-              // If still not walkable, stay put
-              if (!isCellWalkable(mapDef, nx, ny)) {
-                nx = obs.x;
-                ny = obs.y;
-                newDir = obs.dir;
-              }
-            }
           }
-
-          return { ...obs, x: nx, y: ny, dir: newDir };
-        });
-
-        // Check collision with player after moving
-        const { x: px, y: py } = playerPosRef.current;
-        const hitObs = updated.find(o => o.x === px && o.y === py);
-        if (hitObs && !hitObs.type.canCollect && !invincibleRef.current && healthRef.current > 0) {
-          setHealth(h => {
-            const next = h - hitObs.type.damage;
-            if (next <= 0) {
-              setActiveModal('gameover');
-              return 0;
-            }
-            return next;
-          });
-          setInvincible(true);
-          setHitFlash(true);
-          setTimeout(() => setHitFlash(false), 400);
-          setTimeout(() => setInvincible(false), 1500);
-
-          // Toast message
-          if (hitObs.type.hitMessage) {
-            const toastId = `toast-${Date.now()}`;
-            setToasts(prev => [...prev, { id: toastId, message: hitObs.type.hitMessage }]);
-            setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
-          }
-
-          // Obstacle glow
-          setGlowingObstacles(prev => new Set([...prev, hitObs.id]));
-          setTimeout(() => setGlowingObstacles(prev => {
-            const next = new Set(prev);
-            next.delete(hitObs.id);
-            return next;
-          }), 1000);
         }
 
-        return { ...prev, [mapId]: updated };
+        return { ...obs, x: nx, y: ny, dir: newDir };
       });
+
+      setActiveObstacles({ ...prevObs, [mapId]: updated });
+
+      // Check collision with player after moving
+      const { x: px, y: py } = playerPosRef.current;
+      const hitObs = updated.find(o => o.x === px && o.y === py);
+      if (hitObs && !hitObs.type.canCollect && !invincibleRef.current && healthRef.current > 0) {
+        setHealth(h => {
+          const next = h - hitObs.type.damage;
+          if (next <= 0) {
+            setActiveModal('gameover');
+            return 0;
+          }
+          return next;
+        });
+        setInvincible(true);
+        setHitFlash(true);
+        setTimeout(() => setHitFlash(false), 400);
+        setTimeout(() => setInvincible(false), 1500);
+
+        // Toast message
+        if (hitObs.type.hitMessage) {
+          const toastId = `toast-hit-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+          setToasts(prev => [...prev, { id: toastId, message: hitObs.type.hitMessage }]);
+          setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+        }
+
+        // Obstacle glow
+        setGlowingObstacles(prev => new Set([...prev, hitObs.id]));
+        setTimeout(() => setGlowingObstacles(prev => {
+          const next = new Set(prev);
+          next.delete(hitObs.id);
+          return next;
+        }), 1000);
+      }
     }, TICK_MS);
 
     return () => clearInterval(interval);
@@ -534,7 +526,7 @@ function App() {
            setPlayerPos(targetPos);
         }
       } else if (hitObs.type.hitMessage) {
-        const toastId = `toast-${Date.now()}`;
+        const toastId = `toast-collect-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
         setToasts(prev => [...prev, { id: toastId, message: hitObs.type.hitMessage }]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
       }
@@ -670,7 +662,7 @@ function App() {
     setActiveModal(null);
     setSelectedPossession(null);
     
-    const toastId = `toast-drop-${Date.now()}`;
+    const toastId = `toast-drop-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     setToasts(tPrev => [...tPrev, { id: toastId, message: `Placed down ${itemType.label}` }]);
     setTimeout(() => setToasts(tPrev => tPrev.filter(t => t.id !== toastId)), 3000);
   };

@@ -567,9 +567,9 @@ export const MAPS = {
       { type: MAP_03_OBJECTS['shops-fountain'], x: 6, y: 9 },
     ]
   },
-  cimema: {
-    id: "cimema",
-    name: "Blocky Cimema",
+  cinema: {
+    id: "cinema",
+    name: "Blocky Cinema",
     width: 100,
     height: 80,
     data: [
