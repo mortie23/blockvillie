@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Diamond, X, Map as MapIcon, ShoppingBag, Users, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu } from 'lucide-react';
+import { Diamond, X, Map as MapIcon, ShoppingBag, Users, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Menu, Volume2, VolumeX } from 'lucide-react';
 import { MAPS } from './components/MapData';
 import { CHARACTERS } from './components/Characters';
 import { OUTFITS } from './assets/img/outfit/data.js';
 import { INTERACTIVE_OBJECTS } from './assets/img/interactive/data.js';
+import { playSound, setMuted } from './assets/sound/sounds';
 
 const TILE_SIZE = 80;
 
@@ -97,6 +98,13 @@ function App() {
   const [selectedPossession, setSelectedPossession] = useState(null); // Type of possession pending drop
   const [teleportData, setTeleportData] = useState(null); // { message, targetPos }
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMutedState, setIsMutedState] = useState(false);
+
+  const toggleMute = () => {
+    const nextMute = !isMutedState;
+    setIsMutedState(nextMute);
+    setMuted(nextMute);
+  };
 
   // Current map data
   const mapData = MAPS[currentMapId];
@@ -113,6 +121,7 @@ function App() {
       });
     });
   }, []);
+  
   // Show splash on initial load
   useEffect(() => {
     if (mapData.mission && !completedMissions[currentMapId]) {
@@ -120,6 +129,47 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const [modalFocusIndex, setModalFocusIndex] = useState(0);
+
+  useEffect(() => {
+    setModalFocusIndex(0);
+  }, [activeModal]);
+
+  useEffect(() => {
+    if (!activeModal) return;
+
+    const handleModalKeys = (e) => {
+      if (activeModal === 'clothing') {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          setModalFocusIndex(prev => (prev === 0 ? 1 : 0));
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          // We can't elegantly call acceptClothing here without a stale closure unless we re-bind on every render.
+          // Since this useEffect misses the acceptClothing closure, we trigger a hidden click event on the focused button or do a loose re-bind.
+          const acceptBtn = document.getElementById('btn-clothing-accept');
+          const closetBtn = document.getElementById('btn-clothing-closet');
+          if (modalFocusIndex === 0 && acceptBtn) acceptBtn.click();
+          if (modalFocusIndex === 1 && closetBtn) closetBtn.click();
+        }
+      } else if (['teleport_message', 'missioncomplete', 'mission_splash'].includes(activeModal)) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          setActiveModal(null);
+        }
+      } else if (activeModal === 'gameover') {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const restartBtn = document.getElementById('btn-restart');
+          if (restartBtn) restartBtn.click();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleModalKeys);
+    return () => window.removeEventListener('keydown', handleModalKeys);
+  }, [activeModal, modalFocusIndex]); // Doesn't need acceptClothing because we use id dispatching to avoid stale closures
 
   // Handle Movement
   const handleKeyDown = useCallback((e) => {
@@ -197,6 +247,9 @@ function App() {
           const toastId = `toast-flip-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
           setToasts(prev => [...prev, { id: toastId, message: `Turned over ${interactiveAtTarget.type.label}` }]);
           setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toastId)), 3000);
+          if (interactiveAtTarget.type.soundOnTurnOver) {
+            playSound(interactiveAtTarget.type.soundOnTurnOver);
+          }
           return; // Block movement because we just flipped it
         } else if (!interactiveAtTarget.type.canCollect) {
           return; // Block movement if it's not collectable
@@ -453,6 +506,12 @@ function App() {
         setTimeout(() => setHitFlash(false), 400);
         setTimeout(() => setInvincible(false), 1500);
 
+        if (hitObs.type.soundOnHit) {
+          playSound(hitObs.type.soundOnHit);
+        } else {
+          playSound('bump-enemy');
+        }
+
         // Toast message
         if (hitObs.type.hitMessage) {
           const toastId = `toast-hit-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -481,6 +540,7 @@ function App() {
     if (itemOnTile) {
       if (itemOnTile.type === 'diamond') {
         // Collect diamond immediately
+        playSound('diamond');
         setDiamonds(prev => prev + 1);
         // Remove from world
         setWorldItems(prev => ({
@@ -502,6 +562,11 @@ function App() {
         if (prev.some(p => p.id === hitObs.type.id)) return prev;
         return [...prev, hitObs.type];
       });
+      if (hitObs.type.soundOnCollect) {
+        playSound(hitObs.type.soundOnCollect);
+      } else {
+        playSound('collect-generic');
+      }
       setActiveObstacles(prev => ({
         ...prev,
         [currentMapId]: prev[currentMapId].filter(o => o.id !== hitObs.id)
@@ -521,6 +586,7 @@ function App() {
         }
 
         if (targetPos) {
+           playSound('fail');
            setTeleportData({ message, targetPos });
            setActiveModal('teleport_message');
            setPlayerPos(targetPos);
@@ -575,6 +641,7 @@ function App() {
 
   const acceptClothing = (equipIndex) => {
     if (!pendingItem) return;
+    playSound('outfit');
     setInventory(prev => [...prev, pendingItem]);
     if (equipIndex) {
       setEquipped(pendingItem.id);
@@ -690,6 +757,9 @@ function App() {
 
   const renderNavButtons = (isMobile) => (
     <>
+      <button className="button" style={{ padding: '0 10px', height: '40px' }} onClick={toggleMute}>
+        {isMutedState ? <VolumeX size={20} /> : <Volume2 size={20} />}
+      </button>
       <button className="button secondary" onClick={() => { setActiveModal('map'); if(isMobile) setIsMobileMenuOpen(false); }}>
         <MapIcon size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Map
       </button>
@@ -895,7 +965,7 @@ function App() {
             <div style={{ fontSize: '4rem' }}>⌛</div>
             <h2 style={{ color: '#e63946', fontSize: '2rem' }}>Out of Time!</h2>
             <p style={{ color: '#555' }}>You ran out of time before finishing your mission.</p>
-            <button className="button" style={{ background: '#e63946', fontSize: '1.1rem', padding: '14px 30px' }} onClick={restartGame}>
+            <button id="btn-restart" className="button" style={{ background: '#e63946', fontSize: '1.1rem', padding: '14px 30px' }} onClick={restartGame}>
               ⏳ Try Again
             </button>
           </div>
@@ -924,8 +994,8 @@ function App() {
             </div>
             <h3>{pendingItem.outfit.name}</h3>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              <button className="button" onClick={() => acceptClothing(true)}>Accept & Wear</button>
-              <button className="button secondary" onClick={() => acceptClothing(false)}>Put in Closet</button>
+              <button id="btn-clothing-accept" className={`button ${modalFocusIndex === 0 ? 'focused-btn' : ''}`} style={modalFocusIndex === 0 ? { border: '2px solid white', outline: '2px solid #4ecdc4', transform: 'scale(1.05)' } : {}} onClick={() => acceptClothing(true)}>Accept & Wear</button>
+              <button id="btn-clothing-closet" className={`button secondary ${modalFocusIndex === 1 ? 'focused-btn' : ''}`} style={modalFocusIndex === 1 ? { border: '2px solid white', outline: '2px solid #ff6b6b', transform: 'scale(1.05)' } : {}} onClick={() => acceptClothing(false)}>Put in Closet</button>
             </div>
           </div>
         </div>

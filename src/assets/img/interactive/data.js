@@ -87,6 +87,7 @@ export const INTERACTIVE_OBJECTS = {
     speed: 0,
     damage: 0,
     canTurnOver: true,
+    soundOnTurnOver: 'card-flip',
   },
   'chest': {
     id: 'chest',
@@ -128,6 +129,7 @@ export const INTERACTIVE_OBJECTS = {
     damage: 0,
     canTurnOver: true,
     canCollect: true,
+    soundOnTurnOver: 'card-flip',
     hitMessage: 'Picked up a Green 3 card!',
   },
   'uno-red-6': {
@@ -141,6 +143,7 @@ export const INTERACTIVE_OBJECTS = {
     damage: 0,
     canTurnOver: true,
     canCollect: true,
+    soundOnTurnOver: 'card-flip',
     hitMessage: 'Picked up a Red 6 card!',
   },
   'uno-draw-4': {
@@ -154,6 +157,7 @@ export const INTERACTIVE_OBJECTS = {
     damage: 0,
     canTurnOver: true,
     canCollect: true,
+    soundOnTurnOver: 'card-flip',
     hitMessage: 'Picked up a Draw 4 card!',
   },
   'chewing-gum': {
@@ -176,6 +180,7 @@ export const INTERACTIVE_OBJECTS = {
     src: phone,
     speed: 0, damage: 0,
     canCollect: true,
+    soundOnCollect: 'phone-vibrating',
     teleportOnCollect: {
       message: "You have been caught with a phone!\nGo straight to the a blue dot.",
       targetTileType: 9,
